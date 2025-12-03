@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <head>
-  <title>GVRM Walker - Controller + Keyboard + Zoom</title>
+  <title>GVRM Walker - Keyboard + Zoom</title>
   <style>
     body {
       margin: 0;
@@ -36,31 +36,15 @@
       border-radius: 5px;
       line-height: 1.5;
     }
-    #fps-container {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      color: white;
-      font-family: monospace;
-      font-size: 14px;
-      background-color: rgba(0, 0, 0, 0.7);
-      padding: 10px;
-      border-radius: 5px;
-    }
+    
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
-  <div id="info">
-    Controller: Not connected
-  </div>
   <div id="commands">
     Commands<br>
     Keyboard: `WASD` to move, `Arrow keys` for actions, `Shift` to dash, `Space` to jump<br>
-    Controller: `Left stick` to move, `&#9675;&#10005;&#9651;&#9633;` for actions<br>
-    Recorder&#128308;: `R` to start/stop recording
   </div>
-  <div id="fps-container">fps: <span id="fpsdisplay">--</span></div>
 
   <script type="importmap">
     {
@@ -78,10 +62,7 @@
   <script type="module">
     import * as THREE from 'three';
     import { GVRM } from 'gvrm';
-    import { Recorder } from '../apps/recorder.js';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { VirtualController } from '../apps/virtualController.js';
-    import { FPSCounter } from '../apps/fps.js';
 
     const canvas = document.getElementById('canvas');
     const infoDiv = document.getElementById('info');
@@ -117,16 +98,7 @@
     // Set animation transition duration
     gvrm.character.transitionDuration = 0.2;
 
-    // Recorder
-    const recorder = new Recorder(scene, camera, renderer);
-    recorder.setGVRM(gvrm);
-
-    // Virtual Controller for mobile
-    const virtualController = new VirtualController();
-
-    // FPS Counter
-    const fpsc = new FPSCounter();
-
+  
     // Delta time for frame-rate independent movement
     let lastTime = performance.now();
     const targetFPS = 60;
@@ -150,12 +122,6 @@
     const jumpPower = 0.10;
     const groundY = 0;
 
-    // Gamepad state
-    let gamepad = null;
-    let gamepadConnected = false;
-    let previousSquareButton = false;
-    let previousTriangleButton = false;
-    let previousCircleButton = false;
 
     // Keyboard state
     const keys = {};
@@ -187,25 +153,7 @@
       controls.update();
     }, { passive: false });
 
-    // Gamepad connection detection
-    window.addEventListener('gamepadconnected', (e) => {
-      gamepad = e.gamepad;
-      gamepadConnected = true;
-      updateInfo();
-    });
 
-    window.addEventListener('gamepaddisconnected', (e) => {
-      gamepad = null;
-      gamepadConnected = false;
-      updateInfo();
-    });
-
-    function updateInfo() {
-      const controllerText = gamepadConnected
-        ? `Controller: ${gamepad.id}`
-        : 'Controller: Not connected';
-      infoDiv.innerHTML = controllerText;
-    }
 
     // Window resize handler
     window.addEventListener('resize', () => {
@@ -242,10 +190,7 @@
         character = gvrm.character.currentVrm.scene;
         character.position.set(0, 0, 0);
 
-        // Update recorder
-        recorder.setGVRM(gvrm);
-
-        // Update default rotation
+               // Update default rotation
         rot0 = character.rotation0.clone();
 
         // Reset jump state
@@ -260,43 +205,7 @@
       }
     });
 
-    // Get gamepad input with deadzone
-    function getGamepadInput() {
-      // Check virtual controller first (if enabled)
-      if (virtualController.enabled) {
-        return virtualController.getInput();
-      }
-
-      if (!gamepadConnected) return { x: 0, y: 0, magnitude: 0, crossButton: false, squareButton: false, triangleButton: false, circleButton: false };
-
-      // Need to call navigator.getGamepads() each frame to get updated state
-      const gamepads = navigator.getGamepads();
-      gamepad = gamepads[gamepad.index];
-
-      if (!gamepad) return { x: 0, y: 0, magnitude: 0, crossButton: false, squareButton: false, triangleButton: false, circleButton: false };
-
-      const deadzone = 0.15;
-      let x = gamepad.axes[0] || 0;  // Left stick horizontal
-      let y = gamepad.axes[1] || 0;  // Left stick vertical
-
-      // Calculate magnitude
-      const magnitude = Math.sqrt(x * x + y * y);
-
-      // Apply deadzone
-      if (magnitude < deadzone) {
-        x = 0;
-        y = 0;
-      }
-
-      // Buttons: 0 = Cross (×), 1 = Circle (○), 2 = Triangle (△), 3 = Square (□)
-      const crossButton = gamepad.buttons[0]?.pressed || false;
-      const circleButton = gamepad.buttons[1]?.pressed || false;
-      const squareButton = gamepad.buttons[3]?.pressed || false;
-      const triangleButton = gamepad.buttons[2]?.pressed || false;
-
-      return { x, y, magnitude: magnitude < deadzone ? 0 : magnitude, crossButton, circleButton, squareButton, triangleButton };
-    }
-
+    
     renderer.setAnimationLoop(async () => {
       // Calculate delta time for frame-rate independent movement
       const currentTime = performance.now();
@@ -306,53 +215,6 @@
 
       gvrm.update();
       controls.update();
-
-      const input = getGamepadInput();
-
-      // Jump (□ button or ArrowUp key) - trigger on button press (not hold)
-      if ((input.squareButton && !previousSquareButton && !isJumping) || (keys['arrowup'] && !isJumping)) {
-        velocityY = jumpPower;
-        isJumping = true;
-      }
-      previousSquareButton = input.squareButton;
-
-      // Chicken Dance (△ button or ArrowLeft key) - trigger on button press (not hold)
-      if ((input.triangleButton && !previousTriangleButton) || keys['arrowleft']) {
-        currentAnimation = 'dance';
-        await gvrm.changeFBX('./animations/Chicken Dance.fbx');
-        gvrm.character.action.play();
-        keys['arrowleft'] = false; // Prevent continuous triggering
-      }
-      previousTriangleButton = input.triangleButton;
-
-      // Jab Cross (○ button or ArrowRight key) - trigger on button press (not hold)
-      if ((input.circleButton && !previousCircleButton) || keys['arrowright']) {
-        currentAnimation = 'jabcross';
-        await gvrm.changeFBX('./animations/Jab Cross.fbx');
-        gvrm.character.action.setEffectiveTimeScale(1.3);
-        gvrm.character.action.play();
-        keys['arrowright'] = false; // Prevent continuous triggering
-      }
-      previousCircleButton = input.circleButton;
-
-      // Apply jump physics (frame-rate independent)
-      if (isJumping || character.position.y > groundY) {
-        velocityY += gravity * deltaScale;
-        character.position.y += velocityY * deltaScale;
-
-        // Land on ground
-        if (character.position.y <= groundY) {
-          character.position.y = groundY;
-          velocityY = 0;
-          isJumping = false;
-        }
-      }
-
-      // Check if moving or rotating
-      const isMovingGamepad = input.magnitude > 0;
-      const isMovingKeyboard = keys['w'] || keys['s'];
-      const isRotating = keys['a'] || keys['d'];
-      const isMovingOrRotating = isMovingGamepad || isMovingKeyboard || isRotating;
 
       // Exit dance/jabcross mode if moving or rotating
       if ((currentAnimation === 'dance' || currentAnimation === 'jabcross') && isMovingOrRotating) {
@@ -382,27 +244,7 @@
         }
       }
 
-      // Gamepad/Virtual controller movement (takes priority if magnitude > 0)
-      if (input.magnitude > 0) {
-        // Calculate camera-relative direction for controller input
-        const cameraDirection = new THREE.Vector3();
-        camera.getWorldDirection(cameraDirection);
-        cameraDirection.y = 0;
-        cameraDirection.normalize();
-        const cameraAngle = Math.atan2(cameraDirection.x, cameraDirection.z) + Math.PI;
-
-        // Calculate target angle from joystick input, relative to camera
-        const inputAngle = Math.atan2(input.x, input.y);
-        const worldAngle = inputAngle + cameraAngle;
-
-        // Set character rotation to face the target direction
-        character.rotation.y = worldAngle + rot0.y;
-
-        // Move forward at constant speed (or boosted speed)
-        character.position.x += currentSpeed * Math.sin(worldAngle);
-        character.position.z += currentSpeed * Math.cos(worldAngle);
-      } else {
-        // Keyboard controls (only active when gamepad not in use)
+        // Keyboard controls 
         // Rotation: A (left) / D (right)
         if (keys['a']) {
           character.rotation.y += currentRotationSpeed;
@@ -426,16 +268,9 @@
         if (keys[' '] && !isJumping) {
           velocityY = jumpPower;
           isJumping = true;
-        }
-      }
-
-      // Update virtual controller previous state for edge detection
-      if (virtualController.enabled) {
-        virtualController.updatePreviousState();
-      }
+        }     
 
       renderer.render(scene, camera);
-      fpsc.update();
     });
   </script>
 </body>
