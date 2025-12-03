@@ -85,7 +85,18 @@
     });
   </script>
 
+<Script>
   <!-- Apply component to scene -->
-  <script>AFRAME.scenes[0].setAttribute('scene-ready', '');</script>
+  window.addEventListener('DOMContentLoaded', () => {
+  const scene = document.querySelector('a-scene');
+  if (scene.hasLoaded) {
+    scene.setAttribute('scene-ready', '');
+  } else {
+    scene.addEventListener('loaded', () => {
+      scene.setAttribute('scene-ready', '');
+    });
+  }
+});
+</Script>
 </body>
 </html>
