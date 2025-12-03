@@ -2,79 +2,92 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>A-Frame + GVRM (GitHub Pages)</title>
+  <title>A-Frame + Gaussian VRM Avatar</title>
+
+  <!-- Load A-Frame -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+  <!-- Load Three.js UMD from CDN - needed by gaussian-vrm -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.min.js"></script>
+
+  <!-- Load gaussian-vrm UMD build (custom hosted to avoid ES module import errors) -->
+  <script src="https://naruya.github.io/gs-edit/lib/gaussian-vrm.umd.min.js"></script>
+
+  <script>
+    AFRAME.registerComponent('gvrm-avatar', {
+      schema: {
+        src: { type: 'string' },
+        fbx: { type: 'string', default: '' },
+        scale: { type: 'number', default: 1 }
+      },
+
+      init: async function () {
+        const el = this.el;
+        const sceneEl = el.sceneEl;
+
+        if (!sceneEl.hasLoaded) {
+          await new Promise(resolve => sceneEl.addEventListener('loaded', resolve));
+        }
+
+        try {
+          // THREE and GVRM are global here thanks to UMD build scripts above
+          const scene = sceneEl.object3D;
+          const camera = sceneEl.camera;
+          const renderer = sceneEl.renderer;
+
+          console.log('Loading GVRM avatar:', this.data.src);
+          this.gvrm = await GVRM.load(this.data.src, scene, camera, renderer);
+
+          // Adjust avatar scale
+          this.gvrm.character.currentVrm.scene.scale.setScalar(this.data.scale);
+
+          // Add avatar to A-Frame entity's object3D
+          el.setObject3D('mesh', this.gvrm.character.currentVrm.scene);
+
+          // If FBX animation is provided, load animation
+          if (this.data.fbx) {
+            await this.gvrm.changeFBX(this.data.fbx);
+          }
+
+          // Hook into Three.js render loop for animation update
+          renderer.setAnimationLoop(() => {
+            this.gvrm.update();
+            renderer.render(scene, camera);
+          });
+
+          console.log('✅ GVRM avatar loaded and animating!');
+          el.emit('gvrm-loaded');
+
+        } catch (error) {
+          console.error('❌ GVRM failed:', error);
+        }
+      },
+
+      remove: async function () {
+        const scene = this.el.sceneEl.object3D;
+        if (this.gvrm) {
+          await this.gvrm.remove(scene);
+          this.gvrm = null;
+        }
+        this.el.removeObject3D('mesh');
+      }
+    });
+  </script>
 </head>
+
 <body>
   <a-scene background="color: #222">
     <a-entity camera position="0 1.6 3" look-controls></a-entity>
     <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
-    
-    <!-- Avatar container -->
-    <a-entity id="avatar" position="0 0 -2" rotation="0 180 0">
+
+    <!-- Your local avatar and animation files in repo root -->
+    <a-entity position="0 0 -2" rotation="0 180 0"
+              gvrm-avatar="src: ./sample.gvrm; fbx: ./Idle.fbx; scale: 1">
       <a-animation attribute="rotation" to="0 360 0" dur="10000" repeat="indefinite"></a-animation>
     </a-entity>
-    
-    <a-plane position="0 0 -3" rotation="-90 0 0" width="10" height="10" material="color: #444"></a-plane>
+
+    <a-plane position="0 0 -3" rotation="-90 0 0" width="10" height="10"
+             material="color: #444"></a-plane>
   </a-scene>
-
-   <script src="./gvrm.js"></script>
-
-  <script>
-    // Wait for GVRM to be available, then copy EXACT gaussian-vrm example code
-    document.addEventListener('DOMContentLoaded', async () => {
-      // Wait for A-Frame AND GVRM to be ready
-      await new Promise(resolve => {
-        if (typeof AFRAME !== 'undefined' && typeof GVRM !== 'undefined') {
-          resolve();
-          return;
-        }
-        const check = () => {
-          if (typeof AFRAME !== 'undefined' && typeof GVRM !== 'undefined') {
-            resolve();
-          } else {
-            requestAnimationFrame(check);
-          }
-        };
-        check();
-      });
-
-      const sceneEl = document.querySelector('a-scene');
-      await new Promise(r => sceneEl.addEventListener('loaded', r));
-
-      try {
-        console.log('✅ A-Frame + GVRM ready!');
-        
-        // Get A-Frame's Three.js scene EXACTLY like gaussian-vrm examples
-        const scene = sceneEl.object3D;
-        const camera = sceneEl.camera;
-        const renderer = sceneEl.renderer;
-        const avatarEl = document.getElementById('avatar');
-
-        // EXACT code from https://github.com/naruya/gaussian-vrm/tree/main/examples
-        console.log('Loading sample.gvrm...');
-        const gvrm = await GVRM.load('./sample.gvrm', scene, camera, renderer);
-        
-        // Load FBX animation (exactly like examples)
-        await gvrm.changeFBX('./Idle.fbx');
-        
-        // Attach to avatar entity
-        const vrmScene = gvrm.character.currentVrm.scene;
-        vrmScene.scale.setScalar(1);
-        avatarEl.object3D.add(vrmScene);
-
-        // EXACT render loop from gaussian-vrm examples
-        renderer.setAnimationLoop(() => {
-          gvrm.update();
-        });
-
-        console.log('✅ GVRM avatar LOADED & spinning!');
-        
-      } catch (error) {
-        console.error('❌ GVRM ERROR:', error);
-        console.error('Check if sample.gvrm and Idle.fbx are in repo root');
-      }
-    });
-  </script>
 </body>
 </html>
