@@ -10,58 +10,67 @@
     <a-entity camera position="0 1.6 3" look-controls></a-entity>
     <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
     
-    <!-- Your files - perfect for GitHub Pages root -->
-    <a-entity id="avatar" position="0 0 -2" rotation="0 180 0" scene-ready>
+    <!-- Avatar container -->
+    <a-entity id="avatar" position="0 0 -2" rotation="0 180 0">
       <a-animation attribute="rotation" to="0 360 0" dur="10000" repeat="indefinite"></a-animation>
     </a-entity>
     
-    <a-plane position="0 0 -3" rotation="-90 0 0" width="10" height="10" 
-             material="color: #444"></a-plane>
+    <a-plane position="0 0 -3" rotation="-90 0 0" width="10" height="10" material="color: #444"></a-plane>
   </a-scene>
 
-  <!-- CRITICAL: Load GVRM AFTER a-scene (exactly like Three.js examples) -->
-  <script src="https://naruya.github.io/gs-edit/lib/gaussian-vrm.min.js"></script>
-  
   <script>
-    // EXACTLY copies working gaussian-vrm Three.js examples
-    AFRAME.registerComponent('scene-ready', {
-      init: async function() {
-        const sceneEl = this.el.sceneEl;
-        if (!sceneEl.hasLoaded) {
-          await new Promise(r => sceneEl.addEventListener('loaded', r));
+    // Wait for GVRM to be available, then copy EXACT gaussian-vrm example code
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Wait for A-Frame AND GVRM to be ready
+      await new Promise(resolve => {
+        if (typeof AFRAME !== 'undefined' && typeof GVRM !== 'undefined') {
+          resolve();
+          return;
         }
+        const check = () => {
+          if (typeof AFRAME !== 'undefined' && typeof GVRM !== 'undefined') {
+            resolve();
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        check();
+      });
 
-        try {
-          // Get A-Frame's Three.js objects (identical to examples)
-          const scene = sceneEl.object3D;
-          const camera = sceneEl.camera;
-          const renderer = sceneEl.renderer;
+      const sceneEl = document.querySelector('a-scene');
+      await new Promise(r => sceneEl.addEventListener('loaded', r));
 
-          console.log('Loading GVRM...');
-          
-          // EXACT same GVRM.load() call as working examples
-          const gvrm = await GVRM.load('./sample.gvrm', scene, camera, renderer);
-          
-          // Load animation FBX (same as examples)
-          await gvrm.changeFBX('./Idle.fbx');
+      try {
+        console.log('✅ A-Frame + GVRM ready!');
+        
+        // Get A-Frame's Three.js scene EXACTLY like gaussian-vrm examples
+        const scene = sceneEl.object3D;
+        const camera = sceneEl.camera;
+        const renderer = sceneEl.renderer;
+        const avatarEl = document.getElementById('avatar');
 
-          // Attach to A-Frame entity (avatar positioned at 0 0 -2)
-          const avatarEl = document.getElementById('avatar');
-          const avatarScene = gvrm.character.currentVrm.scene;
-          avatarScene.scale.setScalar(1); // Your scale option
-          avatarEl.object3D.add(avatarScene);
+        // EXACT code from https://github.com/naruya/gaussian-vrm/tree/main/examples
+        console.log('Loading sample.gvrm...');
+        const gvrm = await GVRM.load('./sample.gvrm', scene, camera, renderer);
+        
+        // Load FBX animation (exactly like examples)
+        await gvrm.changeFBX('./Idle.fbx');
+        
+        // Attach to avatar entity
+        const vrmScene = gvrm.character.currentVrm.scene;
+        vrmScene.scale.setScalar(1);
+        avatarEl.object3D.add(vrmScene);
 
-          // EXACT same render loop as examples
-          renderer.setAnimationLoop(() => {
-            gvrm.update();
-            renderer.render(scene, camera);
-          });
+        // EXACT render loop from gaussian-vrm examples
+        renderer.setAnimationLoop(() => {
+          gvrm.update();
+        });
 
-          console.log('✅ GVRM loaded in A-Frame!');
-          
-        } catch (error) {
-          console.error('❌ GVRM failed:', error);
-        }
+        console.log('✅ GVRM avatar LOADED & spinning!');
+        
+      } catch (error) {
+        console.error('❌ GVRM ERROR:', error);
+        console.error('Check if sample.gvrm and Idle.fbx are in repo root');
       }
     });
   </script>
