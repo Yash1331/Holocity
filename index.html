@@ -1,98 +1,100 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>A-Frame + GVRM example</title>
+    <title>A‑Frame + GVRM</title>
 
     <!-- A-Frame -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 
-    <!-- Three + GVRM (ESM via importmap) -->
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
-          "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.1.0/lib/three-vrm.module.js",
-          "gaussian-splats-3d": "https://naruya.github.io/gs-edit/lib/gaussian-splats-3d.module.js",
-          "jszip": "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm",
-          "gvrm": "https://naruya.github.io/gs-edit/lib/gaussian-vrm.min.js"
-        }
-      }
-    </script>
-
-    <!-- GVRM A-Frame component -->
+    <!-- GVRM + A-Frame glue -->
     <script type="module">
-      import * as THREE from 'three';
-      import { GVRM } from 'gvrm';
+      // Import GVRM directly from the URL you gave earlier
+      import { GVRM } from 'https://naruya.github.io/gs-edit/lib/gaussian-vrm.min.js';
 
       AFRAME.registerComponent('gvrm-avatar', {
         schema: {
-          src:   { type: 'string', default: './sample.gvrm' },
-          anim:  { type: 'string', default: './Idle.fbx' }
+          src:  {type: 'string'},              // .gvrm URL
+          fbx:  {type: 'string', default: ''}, // .fbx URL (optional)
+          scale:{type: 'number', default: 1}
         },
 
         init: function () {
-          const sceneEl   = this.el.sceneEl;
-
-          // A-Frame's underlying THREE objects
-          this.threeScene   = sceneEl.object3D;
-          this.renderer     = sceneEl.renderer;
-          this.camera       = sceneEl.camera && sceneEl.camera.el.getObject3D('camera');
-
           this.gvrm = null;
-          this.loaded = false;
-
-          // If camera isn't ready yet, wait for it
-          if (!this.camera) {
-            sceneEl.addEventListener('loaded', () => {
-              this.camera = sceneEl.camera.el.getObject3D('camera');
-              this.loadGvrm();
-            });
-          } else {
-            this.loadGvrm();
-          }
+          this._loaded = false;
+          this._loadAvatar();
         },
 
-        async loadGvrm () {
-          if (!this.renderer || !this.camera || !this.threeScene) return;
+        async _loadAvatar () {
+          const el = this.el;
+          const sceneEl = el.sceneEl;
 
-          // 1/3: load GVRM
-          this.gvrm = await GVRM.load(this.data.src, this.threeScene, this.camera, this.renderer);
-
-          // 2/3: change animation
-          if (this.data.anim) {
-            await this.gvrm.changeFBX(this.data.anim);
+          // Wait for A-Frame to create Three.js scene, camera and renderer
+          if (!sceneEl.hasLoaded) {
+            await new Promise(resolve =>
+              sceneEl.addEventListener('loaded', resolve, {once: true})
+            );
           }
 
-          this.loaded = true;
+          const threeScene    = sceneEl.object3D;
+          const threeCamera   = sceneEl.camera;
+          const threeRenderer = sceneEl.renderer;
+
+          // Load GVRM (this reads sample.gvrm and internally loads model.vrm etc.)
+          this.gvrm = await GVRM.load(
+            this.data.src,
+            threeScene,
+            threeCamera,
+            threeRenderer
+          );
+
+          // Attach the VRM+splats scene under this entity so you can position it.
+          const vrmScene = this.gvrm.character.currentVrm.scene;
+          vrmScene.scale.setScalar(this.data.scale);
+          el.setObject3D('mesh', vrmScene);
+
+          // Optional idle animation
+          if (this.data.fbx) {
+            await this.gvrm.changeFBX(this.data.fbx);
+          }
+
+          this._loaded = true;
+          el.emit('gvrm-loaded', {gvrm: this.gvrm}, false);
         },
 
         tick: function () {
-          if (!this.loaded || !this.gvrm) return;
-
-          // 3/3: update every frame
+          if (!this._loaded || !this.gvrm) return;
+          // Advance VRM and gaussian splats
           this.gvrm.update();
+        },
+
+        remove: function () {
+          if (this.gvrm) {
+            const scene = this.el.sceneEl.object3D;
+            // GVRM has a remove(scene) method; we call it to clean up.
+            this.gvrm.remove(scene);
+            this.gvrm = null;
+          }
+          this.el.removeObject3D('mesh');
         }
       });
     </script>
   </head>
 
   <body>
-    <a-scene background="color: #222">
-      <!-- Simple ground so you see something in the scene -->
-      <a-plane position="0 0 -2" rotation="-90 0 0" width="4" height="4" color="#555"></a-plane>
+    <a-scene>
+      <!-- Camera + light -->
+      <a-entity camera position="0 1.6 2"></a-entity>
+      <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
 
-      <!-- Camera -->
-      <a-entity position="0 1.6 2">
-        <a-camera></a-camera>
-      </a-entity>
-
-      <!-- GVRM avatar, loaded by the component -->
-      <!-- Rotation is optional, just to face the camera -->
+      <!-- Your avatar; note the relative paths -->
       <a-entity
-        gvrm-avatar="src: ./sample.gvrm; anim: ./Idle.fbx"
-        rotation="0 180 0">
+        position="0 0 -2"
+        rotation="0 180 0"
+        gvrm-avatar="src: ./sample.gvrm; fbx: ./Idle.fbx; scale: 1">
       </a-entity>
+
+      <a-sky color="#222"></a-sky>
     </a-scene>
   </body>
 </html>
