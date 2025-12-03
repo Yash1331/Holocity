@@ -4,6 +4,9 @@
   <style>
     body { margin: 0; overflow: hidden; }
   </style>
+  
+  <!-- CRITICAL: Load A-Frame FIRST -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 </head>
 <body>
   <a-scene background="color: #222">
@@ -18,7 +21,7 @@
     <a-plane position="0 0 -3" rotation="-90 0 0" width="10" height="10" material="color: #444"></a-plane>
   </a-scene>
 
-  <!-- EXACT SAME importmap from your working snippet -->
+  <!-- YOUR WORKING importmap -->
   <script type="importmap">
     {
       "imports": {
@@ -32,43 +35,57 @@
     }
   </script>
 
-  <!-- EXACT SAME GVRM code, just using A-Frame's scene/camera/renderer -->
+  <!-- FIXED: Wait for A-Frame to fully initialize -->
   <script type="module">
     import * as THREE from 'three';
     import { GVRM } from 'gvrm';
 
-    // Get A-Frame's Three.js objects (instead of creating new ones)
-    const sceneEl = document.querySelector('a-scene');
-    const avatarEl = document.getElementById('avatar-container');
-    
-    sceneEl.addEventListener('loaded', async () => {
-      const scene = sceneEl.object3D;
-      const camera = sceneEl.camera;
-      const renderer = sceneEl.renderer;
-
-      try {
-        console.log('🔄 Loading GVRM...');
+    // Wait for A-Frame scene to be FULLY ready
+    AFRAME.registerComponent('scene-ready', {
+      init: async function() {
+        const sceneEl = this.el.sceneEl;
+        const avatarEl = document.getElementById('avatar-container');
         
-        // YOUR WORKING CODE - 1/3 (just changed paths to repo root)
-        const gvrm = await GVRM.load('./sample.gvrm', scene, camera, renderer);
-        
-        // YOUR WORKING CODE - 2/3
-        await gvrm.changeFBX('./Idle.fbx');
-        
-        // Attach to A-Frame entity (instead of standalone canvas)
-        avatarEl.object3D.add(gvrm.character.currentVrm.scene);
-        
-        // YOUR WORKING CODE - 3/3 (A-Frame renderer handles size)
-        renderer.setAnimationLoop(() => {
-          gvrm.update();
+        // Wait for scene loaded + renderer ready
+        await new Promise(resolve => {
+          if (sceneEl.hasLoaded && sceneEl.renderer) {
+            resolve();
+          } else {
+            sceneEl.addEventListener('loaded', resolve);
+          }
         });
 
-        console.log('✅ GVRM LOADED IN A-FRAME!');
-        
-      } catch (error) {
-        console.error('❌ GVRM failed:', error);
+        const scene = sceneEl.object3D;
+        const camera = sceneEl.camera;
+        const renderer = sceneEl.renderer;
+
+        try {
+          console.log('🔄 Loading GVRM...');
+          
+          // YOUR WORKING CODE - 1/3
+          const gvrm = await GVRM.load('./sample.gvrm', scene, camera, renderer);
+          
+          // YOUR WORKING CODE - 2/3
+          await gvrm.changeFBX('./Idle.fbx');
+          
+          // Attach to A-Frame entity
+          avatarEl.object3D.add(gvrm.character.currentVrm.scene);
+          
+          // YOUR WORKING CODE - 3/3
+          renderer.setAnimationLoop(() => {
+            gvrm.update();
+          });
+
+          console.log('✅ GVRM LOADED IN A-FRAME!');
+          
+        } catch (error) {
+          console.error('❌ GVRM failed:', error);
+        }
       }
     });
   </script>
+
+  <!-- Apply component to scene -->
+  <script>AFRAME.scenes[0].setAttribute('scene-ready', '');</script>
 </body>
 </html>
