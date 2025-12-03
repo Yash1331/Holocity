@@ -2,21 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>A-Frame + GVRM on GitHub Pages</title>
+  <title>A-Frame + GVRM (GitHub Pages)</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   
-  <!-- Load THREE.js UMD first (A-Frame already includes it, but explicit for clarity) -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.min.js"></script>
-  
-  <!-- Load GVRM UMD bundle (this works on GitHub Pages) -->
-  <script src="https://naruya.github.io/gs-edit/lib/gaussian-vrm.min.js"></script>
-  
-  <!-- Our A-Frame component (regular script, no modules) -->
   <script>
     AFRAME.registerComponent('gvrm-avatar', {
       schema: {
-        src: {type: 'string'},    // ./sample.gvrm
-        fbx: {type: 'string', default: ''}, // ./Idle.fbx
+        src: {type: 'string'},    
+        fbx: {type: 'string', default: ''}, 
         scale: {type: 'number', default: 1}
       },
 
@@ -24,57 +17,50 @@
         const el = this.el;
         const sceneEl = el.sceneEl;
         
-        // Wait for A-Frame scene
+        // Wait for scene
         if (!sceneEl.hasLoaded) {
-          await new Promise(r => sceneEl.addEventListener('loaded', r, {once: true}));
+          await new Promise(r => sceneEl.addEventListener('loaded', r));
         }
 
         try {
-          // Get Three.js objects from A-Frame
+          console.log('Loading GVRM module...');
+          
+          // DYNAMICALLY import GVRM as ES module (this works on GitHub Pages)
+          const { GVRM } = await import('https://naruya.github.io/gs-edit/lib/gaussian-vrm.min.js');
+          
           const scene = sceneEl.object3D;
           const camera = sceneEl.camera;
           const renderer = sceneEl.renderer;
           
-          console.log('Loading GVRM:', this.data.src);
+          console.log('Loading avatar:', this.data.src);
+          this.gvrm = await GVRM.load(this.data.src, scene, camera, renderer);
           
-          // Load GVRM using global GVRM (from gaussian-vrm.min.js)
-          this.gvrm = await GVRM.load(
-            this.data.src, 
-            scene, 
-            camera, 
-            renderer
-          );
-          
-          // Attach the avatar scene to this entity
+          // Attach avatar
           const avatarScene = this.gvrm.character.currentVrm.scene;
           avatarScene.scale.setScalar(this.data.scale);
           el.setObject3D('mesh', avatarScene);
           
-          // Load animation if provided
+          // Animation
           if (this.data.fbx) {
             await this.gvrm.changeFBX(this.data.fbx);
           }
           
-          console.log('GVRM loaded successfully!');
+          console.log('✅ GVRM loaded!');
           el.emit('gvrm-loaded');
           
         } catch (error) {
-          console.error('GVRM load failed:', error);
-          el.emit('gvrm-error', {error});
+          console.error('❌ GVRM failed:', error);
         }
       },
 
       tick: function() {
-        if (this.gvrm && this.gvrm.update) {
-          this.gvrm.update();
-        }
+        if (this.gvrm?.update) this.gvrm.update();
       },
 
       remove: async function() {
         if (this.gvrm) {
           const scene = this.el.sceneEl.object3D;
           await this.gvrm.remove(scene);
-          this.gvrm = null;
         }
         this.el.removeObject3D('mesh');
       }
@@ -84,23 +70,17 @@
 
 <body>
   <a-scene background="color: #222">
-    <!-- Camera positioned to see avatar -->
     <a-entity camera position="0 1.6 3" look-controls></a-entity>
+    <a-entity light="type: directional; intensity: 1" position="1 2 1"></a-entity>
     
-    <!-- Lighting -->
-    <a-entity light="type: directional; color: #fff; intensity: 1" 
-              position="1 2 1"></a-entity>
-    
-    <!-- Your GVRM avatar - paths work perfectly on GitHub Pages root -->
-    <a-entity position="0 0 -2" 
-              rotation="0 180 0"
-              gvrm-avatar="src: ./sample.gvrm; fbx: ./Idle.fbx; scale: 1">
+    <!-- Your files - perfect for GitHub Pages root -->
+    <a-entity position="0 0 -2" rotation="0 180 0"
+              gvrm-avatar="src: ./sample.gvrm; fbx: ./Idle.fbx">
+      <a-animation attribute="rotation" to="0 360 0" dur="10000" repeat="indefinite"></a-animation>
     </a-entity>
     
-    <!-- Ground for reference -->
-    <a-plane position="0 0 -3" rotation="-90 0 0" 
-             width="10" height="10" 
-             material="color: #333; metalness: 0.5"></a-plane>
+    <a-plane position="0 0 -3" rotation="-90 0 0" width="10" height="10" 
+             material="color: #444"></a-plane>
   </a-scene>
 </body>
 </html>
