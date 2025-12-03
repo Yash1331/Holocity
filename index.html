@@ -224,8 +224,8 @@
         gvrm.character.action.play();
       }
 
-      // Speed boost (× button or Shift key or ArrowDown key)
-      const isBoosting = input.crossButton || keys['shift'] || keys['arrowdown'];
+      // Speed boost (Shift key or ArrowDown key)
+      const isBoosting = keys['shift'] || keys['arrowdown'];
       const currentSpeed = (isBoosting ? speed * speedBoost : speed) * deltaScale;
       const currentRotationSpeed = (isBoosting ? rotationSpeed * speedBoost : rotationSpeed) * deltaScale;
 
