@@ -315,45 +315,6 @@ const fpsc = new FPSCounter();
 
 let stateAnim = "play";
 
-// Get center character (index 0)
-  const centerGVRM = gvrms[0];
-  if (!centerGVRM || !centerGVRM.isReady) {
-    console.error('Center character not ready');
-    return;
-  }
-
-  try {
-    // Read file as Blob
-    const blob = new Blob([file], { type: file.type });
-    const url = URL.createObjectURL(blob);
-
-    // Save current animation index
-    const currentAnimIndex = modelAnimations[0];
-
-    // Remove existing GVRM
-    await centerGVRM.remove(scene);
-
-    // Load new GVRM
-    const newGVRM = await GVRM.load(url, scene, camera, renderer, file.name);
-
-    // Set position (center position)
-    newGVRM.character.currentVrm.scene.position.set(0, 0, 1);
-
-    // Update gvrms array
-    gvrms[0] = newGVRM;
-
-    // Apply current animation
-    await newGVRM.changeFBX(fbxFiles[currentAnimIndex]);
-
-    // Release URL
-    URL.revokeObjectURL(url);
-
-    console.log(`Replaced center character with: ${file.name}`);
-  } catch (error) {
-    console.error('Failed to load dropped GVRM:', error);
-  }
-;
-
 function updateRenderOrder() {
   if (!allModelsReady || gvrms.length === 0) return;
 
