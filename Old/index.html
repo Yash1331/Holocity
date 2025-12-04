@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<head>
+  <title>GVRM Walker - Keyboard + Zoom</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #222;
+    }
+    #canvas {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-family: monospace;
+      font-size: 14px;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+    #commands {
+      position: absolute;
+      top: 40px;
+      left: 10px;
+      color: white;
+      font-family: monospace;
+      font-size: 12px;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 5px;
+      line-height: 1.5;
+    }
+    
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div id="commands">
+    Commands<br>
+    Keyboard: `WASD` to move, `Shift` or `Down Arrow` to dash<br>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+        "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.1.0/lib/three-vrm.module.js",
+        "gaussian-splats-3d": "https://naruya.github.io/gs-edit/lib/gaussian-splats-3d.module.js",
+        "jszip": "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm",
+        "gvrm": "https://naruya.github.io/gs-edit/lib/gaussian-vrm.min.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GVRM } from 'gvrm';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const canvas = document.getElementById('canvas');
+    const infoDiv = document.getElementById('info');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    const scene = new THREE.Scene();
+
+    const axesHelper = new THREE.AxesHelper(1);
+    scene.add(axesHelper);
+
+    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.01, 100);
+    camera.position.set(2.4, 2.4, 4);
+    camera.lookAt(0, 1, 0);
+
+    // Camera controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1, 0);  // Look at character center
+    controls.enablePan = false;  // Disable panning
+    controls.enableZoom = false;  // Disable OrbitControls zoom (we use custom wheel zoom)
+    controls.update();
+
+    // GVRM
+    let gvrm = await GVRM.load('./avatars/sample.gvrm', scene, camera, renderer);
+    let character = gvrm.character.currentVrm.scene;
+    character.position.set(0, 0, 0);
+
+    // Load Walking animation
+    await gvrm.changeFBX('./animations/Walking.fbx');
+    gvrm.character.action.play();
+
+    // Set animation transition duration
+    gvrm.character.transitionDuration = 0.2;
+
+  
+    // Delta time for frame-rate independent movement
+    let lastTime = performance.now();
+    const targetFPS = 60;
+    const targetFrameTime = 1000 / targetFPS;
+
+    // Speed values (calibrated for 60 FPS)
+    const speed = 0.02;
+    const speedBoost = 4.0;
+    const rotationSpeed = 0.05;
+
+    // Animation state
+    let currentAnimation = 'walking';  // 'walking' or 'running'
+
+    // Get default rotation
+    let rot0 = character.rotation0.clone();
+
+    // Jump physics (calibrated for 60 FPS)
+    let velocityY = 0;
+    let isJumping = false;
+    const gravity = -0.008;
+    const jumpPower = 0.10;
+    const groundY = 0;
+
+
+    // Keyboard state
+    const keys = {};
+    window.addEventListener('keydown', (e) => {
+      keys[e.key.toLowerCase()] = true;
+    });
+    window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+    // Mouse wheel zoom
+    const minDistance = 1.0;
+    const maxDistance = 20.0;
+
+    window.addEventListener('wheel', (e) => {
+      e.preventDefault();
+
+      // Get current distance from target
+      const currentDistance = camera.position.distanceTo(controls.target);
+
+      // Calculate new distance
+      const zoomSpeed = 0.1;
+      let newDistance = currentDistance + e.deltaY * zoomSpeed * 0.01;
+      newDistance = Math.max(minDistance, Math.min(maxDistance, newDistance));
+
+      // Update camera position maintaining direction
+      const direction = new THREE.Vector3();
+      direction.subVectors(camera.position, controls.target).normalize();
+      camera.position.copy(controls.target).add(direction.multiplyScalar(newDistance));
+
+      controls.update();
+    }, { passive: false });
+
+
+
+    // Window resize handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Drag and drop handler for GVRM files
+    window.addEventListener('dragover', (event) => {
+      event.preventDefault();
+    });
+
+    window.addEventListener('drop', async (event) => {
+      event.preventDefault();
+
+      const files = event.dataTransfer.files;
+      if (!files) return;
+
+      const file = files[0];
+      if (!file) return;
+
+      const fileType = file.name.split('.').pop();
+
+      if (fileType === 'gvrm') {
+        const blob = new Blob([file], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+
+        // Remove old GVRM
+        await gvrm.remove(scene);
+
+        // Load new GVRM
+        gvrm = await GVRM.load(url, scene, camera, renderer);
+        character = gvrm.character.currentVrm.scene;
+        character.position.set(0, 0, 0);
+
+               // Update default rotation
+        rot0 = character.rotation0.clone();
+
+        // Reset jump state
+        velocityY = 0;
+        isJumping = false;
+
+        // Load Walking animation
+        await gvrm.changeFBX('./animations/Walking.fbx');
+        gvrm.character.action.play();
+
+        infoDiv.innerHTML = `GVRM loaded: ${file.name}<br>` + infoDiv.innerHTML.split('<br>').slice(1).join('<br>');
+      }
+    });
+
+    
+    renderer.setAnimationLoop(async () => {
+      // Calculate delta time for frame-rate independent movement
+      const currentTime = performance.now();
+      const deltaTime = currentTime - lastTime;
+      lastTime = currentTime;
+      const deltaScale = deltaTime / targetFrameTime; // 1.0 at 60 FPS
+
+      gvrm.update();
+      controls.update();
+
+      // Exit dance/jabcross mode if moving or rotating
+      if ((currentAnimation === 'dance' || currentAnimation === 'jabcross') && isMovingOrRotating) {
+        currentAnimation = 'walking';
+        await gvrm.changeFBX('./animations/Walking.fbx');
+        gvrm.character.action.setEffectiveTimeScale(1.0);
+        gvrm.character.action.play();
+      }
+
+      // Speed boost (Shift key or ArrowDown key)
+      const isBoosting = keys['shift'] || keys['arrowdown'];
+      const currentSpeed = (isBoosting ? speed * speedBoost : speed) * deltaScale;
+      const currentRotationSpeed = (isBoosting ? rotationSpeed * speedBoost : rotationSpeed) * deltaScale;
+
+      // Switch animation based on speed (only if not in dance/jabcross mode)
+      if (currentAnimation !== 'dance' && currentAnimation !== 'jabcross') {
+        if (isBoosting && currentAnimation === 'walking') {
+          currentAnimation = 'running';
+          await gvrm.changeFBX('./animations/Running.fbx');
+          gvrm.character.action.setEffectiveTimeScale(1.0);
+          gvrm.character.action.play();
+        } else if (!isBoosting && currentAnimation === 'running') {
+          currentAnimation = 'walking';
+          await gvrm.changeFBX('./animations/Walking.fbx');
+          gvrm.character.action.setEffectiveTimeScale(1.0);
+          gvrm.character.action.play();
+        }
+      }
+
+        // Keyboard controls 
+        // Rotation: A (left) / D (right)
+        if (keys['a']) {
+          character.rotation.y += currentRotationSpeed;
+        }
+        if (keys['d']) {
+          character.rotation.y -= currentRotationSpeed;
+        }
+
+        // Movement: W (forward) / S (backward) - relative to character rotation
+        const angle = character.rotation.y - rot0.y;
+        if (keys['w']) {
+          character.position.x += currentSpeed * Math.sin(angle);
+          character.position.z += currentSpeed * Math.cos(angle);
+        }
+        if (keys['s']) {
+          character.position.x -= currentSpeed * Math.sin(angle);
+          character.position.z -= currentSpeed * Math.cos(angle);
+        }
+
+        // Jump with Space key
+        if (keys[' '] && !isJumping) {
+          velocityY = jumpPower;
+          isJumping = true;
+        }     
+
+      renderer.render(scene, camera);
+    });
+  </script>
+</body>
+</html>
