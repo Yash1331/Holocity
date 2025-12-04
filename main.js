@@ -315,7 +315,9 @@ async function setModelAnimation(gvrm, animationIndex) {
     const currentAnimIndex = modelAnimations[0];
 
     // Remove existing GVRM
-    await centerGVRM.remove(scene);
+    if (gvrms[0]) {
+  await gvrms[0].remove(scene);
+}
 
     // Load new GVRM
     const newGVRM = await GVRM.load(url, scene, camera, renderer, file.name);
