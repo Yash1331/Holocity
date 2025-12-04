@@ -173,25 +173,25 @@ let virtualTime = 8; // Start at 8:00 AM (in hours, 0-24)
 const timeSpeed = 24 / 60; // 60 real seconds = 24 virtual hours, so 1 second = 0.4 hours = 24 minutes
 
 const fbxFiles = [
-  '../assets/Breathing.fbx',
-  '../assets/Capoeira.fbx',
-  '../assets/Listening.fbx',
-  '../assets/Shrugging.fbx',
-  '../assets/Texting.fbx',
-  '../assets/Warrior.fbx',
-  '../assets/Around.fbx'
+  '../asset/Breathing.fbx',
+  '../asset/Capoeira.fbx',
+  '../asset/Listening.fbx',
+  '../asset/Shrugging.fbx',
+  '../asset/Texting.fbx',
+  '../asset/Warrior.fbx',
+  '../asset/Around.fbx'
 ];
 
 const gvrmFiles = [
-  '../assets/sample1.gvrm',
-  '../assets/sample2.gvrm',
-  '../assets/sample3.gvrm',
-  '../assets/sample4.gvrm',
-  '../assets/sample5.gvrm',
-  '../assets/sample6.gvrm',
-  '../assets/sample7.gvrm',
-  '../assets/sample8.gvrm',
-  '../assets/sample9.gvrm'
+  '../asset/sample1.gvrm',
+  '../asset/sample2.gvrm',
+  '../asset/sample3.gvrm',
+  '../asset/sample4.gvrm',
+  '../asset/sample5.gvrm',
+  '../asset/sample6.gvrm',
+  '../asset/sample7.gvrm',
+  '../asset/sample8.gvrm',
+  '../asset/sample9.gvrm'
 ];
 
 // Character name mapping (sample filename -> display name)
@@ -575,7 +575,7 @@ async function loadAllModels() {
       walkers.push(walker);
 
       // Load Idle.fbx then initialize Walker
-      gvrm.changeFBX('../assets/Idle.fbx').then(() => {
+      gvrm.changeFBX('../asset/Idle.fbx').then(() => {
         loadCount++;
         updateLoadingDisplay();
 
