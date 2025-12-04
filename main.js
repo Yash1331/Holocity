@@ -21,8 +21,6 @@ const params = new URL(window.location.href).searchParams;
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 document.body.appendChild(renderer.domElement);
 renderer.setSize(width, height);
-// attach renderer to the page
-document.body.appendChild(renderer.domElement);
 
 // camera
 const camera = new THREE.PerspectiveCamera(65.0, width / height, 0.01, 2000.0);
@@ -309,6 +307,20 @@ async function setModelAnimation(gvrm, animationIndex) {
     await gvrm.changeFBX(fbxFiles[animationIndex]);
   }
 }
+
+
+loadAllModels();
+
+const fpsc = new FPSCounter();
+
+let stateAnim = "play";
+
+// Get center character (index 0)
+  const centerGVRM = gvrms[0];
+  if (!centerGVRM || !centerGVRM.isReady) {
+    console.error('Center character not ready');
+    return;
+  }
 
   try {
     // Read file as Blob
