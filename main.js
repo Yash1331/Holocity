@@ -7,7 +7,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { GVRM, GVRMUtils } from 'gvrm';
 import { FPSCounter } from './utils/fps.js';
-import { createSky, createHouses, createCenterHouse, updateSky } from './scene.js';
+import { createSky, updateSky, loadCity, enableFog } from './scene.js';
 import { Walker } from './walker.js';
 
 // UI
@@ -78,6 +78,9 @@ controls2.update();
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
 
+// Fog:
+enableFog(scene, 0x050510, 30, 600); // tweak to taste
+
 // Ambient light (constant illumination)
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
@@ -89,84 +92,22 @@ scene.add(light);
 
 // Scene management
 let currentScene = 2; // Default is Scene 2 (dark)
-let gridHelper = new THREE.GridHelper(300, 60, 0x808080, 0x808080); // Dark scene grid
-scene.add(gridHelper);
-const axesHelper = new THREE.AxesHelper(0.5);
-scene.add(axesHelper);
+// let gridHelper = new THREE.GridHelper(300, 60, 0x808080, 0x808080); // Dark scene grid
+// scene.add(gridHelper);
+// const axesHelper = new THREE.AxesHelper(0.5);
+// scene.add(axesHelper);
+
+// Sky
 let sky = createSky(scene);
-createHouses(scene);
 
-// Add center house
-const centerHouse = createCenterHouse(scene);
-
-// Create trees
-function createTree(x, z) {
-  const tree = new THREE.Group();
-
-  // Trunk
-  const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.25, 2, 8);
-  const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 }); // Brown
-  const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-  trunk.position.y = 1;
-  tree.add(trunk);
-
-  // Foliage (leaves)
-  const foliageGeometry = new THREE.SphereGeometry(1.2, 8, 8);
-  const foliageMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 }); // Forest green
-  const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
-  foliage.position.y = 2.5;
-  tree.add(foliage);
-
-  tree.position.set(x, 0, z);
-  scene.add(tree);
-  return tree;
-}
-
-// Create flowers
-function createFlower(x, z) {
-  const flower = new THREE.Group();
-
-  // Stem
-  const stemGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.8, 8);
-  const stemMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 }); // Green
-  const stem = new THREE.Mesh(stemGeometry, stemMaterial);
-  stem.position.y = 0.4;
-  flower.add(stem);
-
-  // Flower head (petals)
-  const petalGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-  const petalMaterial = new THREE.MeshStandardMaterial({ color: 0xFF69B4 }); // Hot pink
-  const petals = new THREE.Mesh(petalGeometry, petalMaterial);
-  petals.position.y = 0.8;
-  petals.scale.set(1, 0.5, 1); // Flatten a bit
-  flower.add(petals);
-
-  // Center of flower
-  const centerGeometry = new THREE.SphereGeometry(0.1, 8, 8);
-  const centerMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFF00 }); // Yellow
-  const center = new THREE.Mesh(centerGeometry, centerMaterial);
-  center.position.y = 0.9;
-  flower.add(center);
-
-  flower.position.set(x, 0, z);
-  scene.add(flower);
-  return flower;
-}
-
-// Place trees and flowers in the scene
-const trees = [
-  createTree(-8, -5),
-  createTree(7, -8),
-  createTree(-6, 8),
-  createTree(9, 6)
-];
-
-const flowers = [
-  createFlower(-4, -3),
-  createFlower(5, -4),
-  createFlower(-5, 5),
-  createFlower(8, 3)
-];
+// City
+let city = null;
+loadCity(scene).then(c => {
+  city = c;
+  console.log('City loaded', city);
+}).catch(err => {
+  console.error('Failed to load city:', err);
+});
 
 // Time system (accelerated time, 24 hours in 1 real minute)
 let virtualTime = 8; // Start at 8:00 AM (in hours, 0-24)
@@ -490,53 +431,14 @@ function shuffleAnimations() {
 }
 
 // Generate random position avoiding center house
-function generateRandomPosition(boundary, houseRadius) {
-  let validPosition = false;
-  let attempts = 0;
-  const maxAttempts = 50;
-  let x, z;
-
-  while (!validPosition && attempts < maxAttempts) {
-    x = (Math.random() - 0.5) * boundary * 2;
-    z = (Math.random() - 0.5) * boundary * 2;
-
-    // Check if position is outside house exclusion zone
-    const distanceFromCenter = Math.sqrt(x * x + z * z);
-
-    if (distanceFromCenter > houseRadius) {
-      validPosition = true;
-    }
-
-    attempts++;
-  }
-
-  // Fallback: place at boundary edge if no valid position found
-  if (!validPosition) {
-    const angle = Math.random() * Math.PI * 2;
-    const radius = boundary * 0.8;
-    x = Math.cos(angle) * radius;
-    z = Math.sin(angle) * radius;
-  }
-
+function generateRandomPosition(boundary) {
+  const x = (Math.random() - 0.5) * boundary * 2;
+  const z = (Math.random() - 0.5) * boundary * 2;
   return { x, z };
 }
 
 async function loadAllModels() {
   const boundary = 11.25; // 1.5x larger boundary (same as walker)
-  const houseRadius = 3.5; // Exclusion zone around center house
-
-  // Register center house as detectable
-  registerDetectableObject('家', centerHouse);
-
-  // Register trees as detectable objects
-  trees.forEach((tree) => {
-    registerDetectableObject('木', tree);
-  });
-
-  // Register flowers as detectable objects
-  flowers.forEach((flower) => {
-    registerDetectableObject('花', flower);
-  });
 
   for (let i = 0; i < N; i++) {
     const fileName = gvrmFiles[i].split('/').pop();
@@ -544,7 +446,7 @@ async function loadAllModels() {
 
     promise.then((gvrm) => {
       // Generate random initial position (avoiding center house)
-      const pos = generateRandomPosition(boundary, houseRadius);
+      const pos = generateRandomPosition(boundary);
       const randomX = pos.x;
       const randomZ = pos.z;
       const randomY = 0;
