@@ -475,14 +475,6 @@ async function setModelAnimation(gvrm, animationIndex) {
   }
 }
 
-
-  // Get center character (index 0)
-  const centerGVRM = gvrms[0];
-  if (!centerGVRM || !centerGVRM.isReady) {
-    console.error('Center character not ready');
-    return;
-  }
-
   try {
     // Read file as Blob
     const blob = new Blob([file], { type: file.type });
