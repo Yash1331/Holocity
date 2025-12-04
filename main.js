@@ -6,7 +6,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { GVRM, GVRMUtils } from 'gvrm';
-import { FPSCounter } from './utils/fps.js';
 import { createSky, updateSky, loadCity, enableFog } from './scene.js';
 import { Walker } from './walker.js';
 
@@ -229,160 +228,6 @@ function checkVisibleObjects() {
   }
 }
 
-// Load gags from JSON file
-fetch('./gags.json')
-  .then(response => response.json())
-  .then(data => {
-    gagsData = data;
-    console.log('Gags loaded successfully');
-  })
-  .catch(error => {
-    console.error('Failed to load gags:', error);
-    gagsData = []; // Fallback to empty array
-  });
-
-// Load detection comments from JSON file
-fetch('./detection_comments.json')
-  .then(response => response.json())
-  .then(data => {
-    detectionComments = data;
-    console.log('Detection comments loaded successfully');
-  })
-  .catch(error => {
-    console.error('Failed to load detection comments:', error);
-    detectionComments = {}; // Fallback to empty object
-  });
-
-function createSpeechBubble(index) {
-  const bubble = document.createElement('div');
-  bubble.className = 'speech-bubble';
-  bubble.textContent = 'やっほー';
-  document.getElementById('speech-bubbles-container').appendChild(bubble);
-  speechBubbles[index] = bubble;
-  return bubble;
-}
-
-function getRandomGag() {
-  if (!gagsData || gagsData.length === 0) {
-    return 'やっほー'; // Default fallback
-  }
-
-  // Select random gag from the list
-  const randomIndex = Math.floor(Math.random() * gagsData.length);
-  return gagsData[randomIndex];
-}
-
-function showSpeechBubble(index, comment) {
-  if (!gvrms[index] || !gvrms[index].isReady) return;
-
-  const bubble = speechBubbles[index];
-  const character = gvrms[index].character.currentVrm.scene;
-
-  // Set the comment text
-  bubble.textContent = comment;
-
-  // Convert 3D position to 2D screen position
-  const pos3D = character.position.clone();
-  pos3D.y += 3; // Position above character's head
-  pos3D.project(camera);
-
-  const x = (pos3D.x * 0.5 + 0.5) * width;
-  const y = (-(pos3D.y * 0.5) + 0.5) * height;
-
-  bubble.style.left = `${x}px`;
-  bubble.style.top = `${y}px`;
-  bubble.style.transform = 'translate(-50%, -100%)';
-  bubble.classList.add('show');
-
-  // Hide after 9 seconds
-  setTimeout(() => {
-    bubble.classList.remove('show');
-  }, 5000);
-}
-
-// Make showSpeechBubble accessible globally for interactions
-window.showSpeechBubble = showSpeechBubble;
-
-// Interaction display functions
-// Timeline functions
-function formatTimeHM(virtualTime) {
-  const hours = Math.floor(virtualTime);
-  const minutes = Math.floor((virtualTime - hours) * 60);
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-}
-
-function addTimelineEvent(virtualTime, eventText) {
-  const timelineEntries = document.getElementById('timeline-entries');
-  if (!timelineEntries) return;
-
-  const entry = document.createElement('div');
-  entry.className = 'timeline-entry';
-
-  const timeSpan = document.createElement('div');
-  timeSpan.className = 'timeline-time';
-  timeSpan.textContent = formatTimeHM(virtualTime);
-
-  const eventSpan = document.createElement('div');
-  eventSpan.className = 'timeline-event';
-  eventSpan.textContent = eventText;
-
-  entry.appendChild(timeSpan);
-  entry.appendChild(eventSpan);
-
-  // Add to the top (prepend)
-  timelineEntries.insertBefore(entry, timelineEntries.firstChild);
-
-  // Limit to 50 entries
-  while (timelineEntries.children.length > 50) {
-    timelineEntries.removeChild(timelineEntries.lastChild);
-  }
-}
-
-function updateSpeechBubbles() {
-  const currentTwoHourBlock = Math.floor(virtualTime / 2);
-
-  // Update block tracker
-  if (currentTwoHourBlock !== lastTwoHourBlock) {
-    lastTwoHourBlock = currentTwoHourBlock;
-  }
-
-  // Random speech disabled for now
-  // const now = Date.now();
-  // if (currentTwoHourBlock !== lastTwoHourBlock && gvrms.length > 1 && (now - lastRandomSpeechTime) > 1000) {
-  //   lastTwoHourBlock = currentTwoHourBlock;
-  //   const availableIndices = [];
-  //   for (let i = 1; i < gvrms.length; i++) {
-  //     if (!speechBubbles[i] || !speechBubbles[i].classList.contains('show')) {
-  //       availableIndices.push(i);
-  //     }
-  //   }
-  //   if (availableIndices.length > 0) {
-  //     const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-  //     const gag = getRandomGag();
-  //     showSpeechBubble(randomIndex, gag);
-  //     lastRandomSpeechTime = now;
-  //   }
-  // }
-
-  // Update speech bubble positions for all visible bubbles
-  for (let i = 0; i < speechBubbles.length; i++) {
-    if (speechBubbles[i] && speechBubbles[i].classList.contains('show')) {
-      if (gvrms[i] && gvrms[i].isReady) {
-        const character = gvrms[i].character.currentVrm.scene;
-        const pos3D = character.position.clone();
-        pos3D.y += 3;
-        pos3D.project(camera);
-
-        const x = (pos3D.x * 0.5 + 0.5) * width;
-        const y = (-(pos3D.y * 0.5) + 0.5) * height;
-
-        speechBubbles[i].style.left = `${x}px`;
-        speechBubbles[i].style.top = `${y}px`;
-      }
-    }
-  }
-}
-
 // Function to shuffle and assign animations without duplicates
 function shuffleAnimations() {
   const indices = [...Array(fbxFiles.length).keys()];
@@ -396,7 +241,7 @@ function shuffleAnimations() {
   return indices;
 }
 
-// Generate random position avoiding center house
+// Generate random position within boundary
 function generateRandomPosition(boundary) {
   const x = (Math.random() - 0.5) * boundary * 2;
   const z = (Math.random() - 0.5) * boundary * 2;
@@ -411,7 +256,7 @@ async function loadAllModels() {
     const promise = GVRM.load(gvrmFiles[i], scene, camera, renderer, fileName);
 
     promise.then((gvrm) => {
-      // Generate random initial position (avoiding center house)
+      // Generate random initial position
       const pos = generateRandomPosition(boundary);
       const randomX = pos.x;
       const randomZ = pos.z;
@@ -428,16 +273,6 @@ async function loadAllModels() {
       // Set initial animation to Idle
       modelAnimations.push(0);
 
-      // Create speech bubble for this character
-      createSpeechBubble(gvrms.length - 1);
-
-      // Register as detectable object (except Character 1 at index 0)
-      if (characterIndex > 0) {
-        // Use mapped character name if available, otherwise use generic name
-        const characterName = characterNames[fileName] || `キャラクター${characterIndex + 1}`;
-        registerDetectableObject(characterName, gvrm.character.currentVrm.scene);
-      }
-
       // Create Walker
       const walker = new Walker(gvrm, i);
       walkers.push(walker);
@@ -452,8 +287,6 @@ async function loadAllModels() {
 
         if (loadCount === totalLoadCount) {
           allModelsReady = true;
-          // Initialize InteractionManager once all models are ready
-          // Interaction manager removed
         }
       });
     });
