@@ -78,13 +78,21 @@ const timeSpeed = 24 / 60;       // 24 hours / 60 seconds
 
 // Animations and avatars
 const fbxFiles = [
+  './assets/Acknowledging.fbx',
+  './assets/Around.fbx',
   './assets/Breathing.fbx',
-  './assets/Capoeira.fbx',
+  './assets/Chicken Dance.fbx',
+  './assets/Dizzy Idle.fbx',
+  './assets/Flying.fbx',
+  './assets/Gangnam Style.fbx',
+  './assets/Happy Idle.fbx',
+  './assets/Idle.fbx',
+  './assets/Jab Cross.fbx',
   './assets/Listening.fbx',
+  './assets/Pointing.fbx',
   './assets/Shrugging.fbx',
-  './assets/Texting.fbx',
+  './assets/Walking.fbx',
   './assets/Warrior.fbx',
-  './assets/Around.fbx'
 ];
 
 const gvrmFiles = [
