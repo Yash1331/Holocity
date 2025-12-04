@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { GVRM, GVRMUtils } from 'gvrm';
+import { FPSCounter } from './utils/fps.js';
 import { createSky, updateSky, loadCity, enableFog } from './scene.js';
 import { Walker } from './walker.js';
 
@@ -18,6 +19,7 @@ const params = new URL(window.location.href).searchParams;
 
 // renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+document.body.appendChild(renderer.domElement);
 renderer.setSize(width, height);
 
 // camera
@@ -315,9 +317,7 @@ async function setModelAnimation(gvrm, animationIndex) {
     const currentAnimIndex = modelAnimations[0];
 
     // Remove existing GVRM
-    if (gvrms[0]) {
-  await gvrms[0].remove(scene);
-}
+    await centerGVRM.remove(scene);
 
     // Load new GVRM
     const newGVRM = await GVRM.load(url, scene, camera, renderer, file.name);
