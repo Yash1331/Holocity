@@ -20,7 +20,7 @@ const params = new URL(window.location.href).searchParams;
 
 // renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-container.appendChild(renderer.domElement);
+// container.appendChild(renderer.domElement);
 renderer.setSize(width, height);
 
 // camera
