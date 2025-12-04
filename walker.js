@@ -39,19 +39,19 @@ export class Walker {
 
     // Special animations (based on actual FBX files in /assets)
     this.specialAnimations = [
-      { name: 'Acknowledging', path: '../assets/Acknowledging.fbx', action: null },
-      { name: 'Around', path: '../assets/Around.fbx', action: null },
-      { name: 'Breathing', path: '../assets/Breathing.fbx', action: null },
-      { name: 'Chicken Dance', path: '../assets/Chicken Dance.fbx', action: null },
-      { name: 'Dizzy Idle', path: '../assets/Dizzy Idle.fbx', action: null },
-      { name: 'Flying', path: '../assets/Flying.fbx', action: null },
-      { name: 'Gangnam Style', path: '../assets/Gangnam Style.fbx', action: null },
-      { name: 'Happy Idle', path: '../assets/Happy Idle.fbx', action: null },
-      { name: 'Jab Cross', path: '../assets/Jab Cross.fbx', action: null },
-      { name: 'Listening', path: '../assets/Listening.fbx', action: null },
-      { name: 'Pointing', path: '../assets/Pointing.fbx', action: null },
-      { name: 'Shrugging', path: '../assets/Shrugging.fbx', action: null },
-      { name: 'Warrior', path: '../assets/Warrior.fbx', action: null }
+      { name: 'Acknowledging', path: '../Acknowledging.fbx', action: null },
+      { name: 'Around', path: '../Around.fbx', action: null },
+      { name: 'Breathing', path: '../Breathing.fbx', action: null },
+      { name: 'Chicken Dance', path: '../Chicken Dance.fbx', action: null },
+      { name: 'Dizzy Idle', path: '../Dizzy Idle.fbx', action: null },
+      { name: 'Flying', path: '../Flying.fbx', action: null },
+      { name: 'Gangnam Style', path: '../Gangnam Style.fbx', action: null },
+      { name: 'Happy Idle', path: '../Happy Idle.fbx', action: null },
+      { name: 'Jab Cross', path: '../Jab Cross.fbx', action: null },
+      { name: 'Listening', path: '../Listening.fbx', action: null },
+      { name: 'Pointing', path: '../Pointing.fbx', action: null },
+      { name: 'Shrugging', path: '../Shrugging.fbx', action: null },
+      { name: 'Warrior', path: '../Warrior.fbx', action: null }
     ];
     this.currentSpecialAnimation = null; // Track current special animation name
     this.isPlayingSpecial = false; // Track if playing special animation
@@ -73,11 +73,11 @@ export class Walker {
 
     try {
       // Load Walking animation
-      await this.gvrm.changeFBX('../assets/Walking.fbx');
+      await this.gvrm.changeFBX('../Walking.fbx');
       this.walkingAction = this.gvrm.character.action;
 
       // Load Idle animation
-      await this.gvrm.changeFBX('../assets/Idle.fbx');
+      await this.gvrm.changeFBX('../Idle.fbx');
       this.idleAction = this.gvrm.character.action;
 
       // Start with Idle animation
@@ -232,7 +232,7 @@ export class Walker {
     // If coming from special animation, reload idle animation
     if (this.isPlayingSpecial) {
       try {
-        await this.gvrm.changeFBX('../assets/Idle.fbx');
+        await this.gvrm.changeFBX('../Idle.fbx');
         this.idleAction = this.gvrm.character.action;
         this.idleAction.play();
         this.currentAnimation = 'idle';
@@ -241,11 +241,11 @@ export class Walker {
         this.currentSpecialAnimation = null;
 
         // Reload walking animation as well
-        await this.gvrm.changeFBX('../assets/Walking.fbx');
+        await this.gvrm.changeFBX('../Walking.fbx');
         this.walkingAction = this.gvrm.character.action;
 
         // Return to idle
-        await this.gvrm.changeFBX('../assets/Idle.fbx');
+        await this.gvrm.changeFBX('../Idle.fbx');
         this.idleAction = this.gvrm.character.action;
         this.idleAction.play();
 
