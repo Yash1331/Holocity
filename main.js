@@ -21,6 +21,8 @@ const params = new URL(window.location.href).searchParams;
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 document.body.appendChild(renderer.domElement);
 renderer.setSize(width, height);
+// attach renderer to the page
+document.body.appendChild(renderer.domElement);
 
 // camera
 const camera = new THREE.PerspectiveCamera(65.0, width / height, 0.01, 2000.0);
