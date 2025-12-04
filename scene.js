@@ -1,4 +1,3 @@
-// scene.js
 // Minimal world: city.glb + procedural sky + optional fog
 
 import * as THREE from 'three';
