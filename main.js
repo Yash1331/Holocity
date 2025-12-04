@@ -29,32 +29,7 @@ camera.position.set(2.0, 6.0, 12.0);
 camera.aspect = width / height;
 camera.updateProjectionMatrix();
 
-// Character 1 first-person view camera
-const character1Camera = new THREE.PerspectiveCamera(75.0, 1.0, 0.1, 100.0);
-const character1CameraOffset = new THREE.Vector3(0, 1.5, -0.3); // Eye-level position, slightly forward
-
-// Recording system for Character 1's view
-let recordingCanvas = null;
-let recordingRenderer = null;
-let mediaRecorder = null;
-let recordedChunks = [];
-let isRecording = false;
-let currentDay = 0;
-let dailyDiaries = [];
-let diaryEntries = []; // Store all diary entries
-
-// Load daily diary patterns
-fetch('./daily_diary.json')
-  .then(response => response.json())
-  .then(data => {
-    dailyDiaries = data;
-    console.log('Daily diary patterns loaded successfully');
-  })
-  .catch(error => {
-    console.error('Failed to load daily diary patterns:', error);
-    dailyDiaries = ['今日も良い一日だった']; // Fallback
-  });
-
+// controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.screenSpacePanning = true;
 controls.target.set(0.0, 0.8, 0.0);
@@ -89,13 +64,6 @@ scene.add(ambientLight);
 const light = new THREE.DirectionalLight(0xffffff, Math.PI);
 light.position.set(10.0, 10.0, 10.0);
 scene.add(light);
-
-// Scene management
-let currentScene = 2; // Default is Scene 2 (dark)
-// let gridHelper = new THREE.GridHelper(300, 60, 0x808080, 0x808080); // Dark scene grid
-// scene.add(gridHelper);
-// const axesHelper = new THREE.AxesHelper(0.5);
-// scene.add(axesHelper);
 
 // Sky
 let sky = createSky(scene);
@@ -507,290 +475,6 @@ async function setModelAnimation(gvrm, animationIndex) {
   }
 }
 
-// Initialize recording canvas and renderer
-function initRecording() {
-  recordingCanvas = document.createElement('canvas');
-  recordingCanvas.width = 640;
-  recordingCanvas.height = 480;
-
-  recordingRenderer = new THREE.WebGLRenderer({
-    canvas: recordingCanvas,
-    antialias: true,
-    preserveDrawingBuffer: true
-  });
-  recordingRenderer.setSize(640, 480);
-}
-
-// Start recording
-function startRecording() {
-  if (!recordingCanvas || isRecording) return;
-
-  const stream = recordingCanvas.captureStream(10); // 10 fps (約3フレームに1枚)
-  mediaRecorder = new MediaRecorder(stream, {
-    mimeType: 'video/webm;codecs=vp9',
-    videoBitsPerSecond: 1000000 // 1 Mbps (フレームレート低下に合わせて調整)
-  });
-
-  recordedChunks = [];
-
-  mediaRecorder.ondataavailable = (event) => {
-    if (event.data.size > 0) {
-      recordedChunks.push(event.data);
-    }
-  };
-
-  mediaRecorder.onstop = () => {
-    saveRecording();
-  };
-
-  mediaRecorder.start();
-  isRecording = true;
-  console.log(`Recording started for Day ${currentDay + 1}`);
-}
-
-// Stop recording and save
-function stopRecording() {
-  if (mediaRecorder && isRecording) {
-    mediaRecorder.stop();
-    isRecording = false;
-  }
-}
-
-// Save recording to IndexedDB
-function saveRecording() {
-  if (recordedChunks.length === 0) return;
-
-  const blob = new Blob(recordedChunks, { type: 'video/webm' });
-  const randomDiary = dailyDiaries[Math.floor(Math.random() * dailyDiaries.length)] || '今日も良い一日だった';
-
-  const entry = {
-    day: currentDay,
-    timestamp: Date.now(),
-    diary: randomDiary,
-    videoBlob: blob
-  };
-
-  // Save to IndexedDB
-  saveToIndexedDB(entry).then(() => {
-    console.log(`Day ${currentDay} recording saved`);
-    diaryEntries.unshift(entry); // Add to beginning (newest first)
-    displayDiaryEntry(entry);
-    currentDay++;
-
-    // Start recording for next day
-    recordedChunks = [];
-    startRecording();
-  });
-}
-
-// IndexedDB functions
-function openDatabase() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('DiaryDatabase', 1);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains('diaries')) {
-        db.createObjectStore('diaries', { keyPath: 'day' });
-      }
-    };
-  });
-}
-
-function saveToIndexedDB(entry) {
-  return openDatabase().then(db => {
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(['diaries'], 'readwrite');
-      const store = transaction.objectStore('diaries');
-      const request = store.put(entry);
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  });
-}
-
-function loadAllDiaries() {
-  return openDatabase().then(db => {
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(['diaries'], 'readonly');
-      const store = transaction.objectStore('diaries');
-      const request = store.getAll();
-
-      request.onsuccess = () => {
-        const entries = request.result;
-        entries.sort((a, b) => b.day - a.day); // Sort by day, newest first
-        resolve(entries);
-      };
-      request.onerror = () => reject(request.error);
-    });
-  });
-}
-
-// Display diary entry in UI
-function displayDiaryEntry(entry) {
-  const container = document.getElementById('diary-container');
-  if (!container) return;
-
-  const diaryCard = document.createElement('div');
-  diaryCard.className = 'diary-card';
-
-  const video = document.createElement('video');
-  video.className = 'diary-video';
-  video.controls = true;
-  video.loop = true;
-  video.muted = true;
-  video.src = URL.createObjectURL(entry.videoBlob);
-
-  const diaryText = document.createElement('div');
-  diaryText.className = 'diary-text';
-  diaryText.textContent = entry.diary;
-
-  const dayLabel = document.createElement('div');
-  dayLabel.className = 'diary-day';
-  dayLabel.textContent = `Day ${entry.day + 1}`;
-
-  diaryCard.appendChild(video);
-  diaryCard.appendChild(dayLabel);
-  diaryCard.appendChild(diaryText);
-
-  // Insert at the beginning (left side)
-  container.insertBefore(diaryCard, container.firstChild);
-}
-
-// Clear all diaries from IndexedDB and UI
-function clearAllDiaries() {
-  return openDatabase().then(db => {
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(['diaries'], 'readwrite');
-      const store = transaction.objectStore('diaries');
-      const request = store.clear();
-
-      request.onsuccess = () => {
-        // Clear UI
-        const container = document.getElementById('diary-container');
-        if (container) {
-          container.innerHTML = '';
-        }
-        // Reset state
-        diaryEntries = [];
-        currentDay = 0;
-        console.log('All diaries cleared');
-        resolve();
-      };
-      request.onerror = () => reject(request.error);
-    });
-  });
-}
-
-// Make clearAllDiaries accessible globally
-window.clearAllDiaries = clearAllDiaries;
-
-// Load existing diaries on startup
-loadAllDiaries().then(entries => {
-  diaryEntries = entries;
-  entries.forEach(entry => displayDiaryEntry(entry));
-  currentDay = entries.length > 0 ? Math.max(...entries.map(e => e.day)) + 1 : 0;
-  console.log(`Loaded ${entries.length} diary entries, starting at Day ${currentDay + 1}`);
-}).catch(error => {
-  console.error('Failed to load diaries:', error);
-});
-
-loadAllModels();
-
-const fpsc = new FPSCounter();
-
-let stateAnim = "play";
-
-// Object detection frame counter (check every N frames for performance)
-let detectionFrameCounter = 0;
-const DETECTION_CHECK_INTERVAL = 10; // Check every 10 frames (~6 times per second at 60fps)
-
-// Track virtual time for recording
-let lastDayTime = 8; // Start time (same as virtualTime initial value)
-
-window.addEventListener('resize', function (event) {
-  width = window.innerWidth;
-  height = window.innerHeight;
-  renderer.setSize(width, height);
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-  renderer.render(scene, camera);
-});
-
-window.addEventListener('keydown', function (event) {
-  if (event.code === "Space") {
-    if (stateAnim === "play") {
-      stateAnim = "pause";
-      for (const gvrm of gvrms) {
-        if (gvrm && gvrm.character && gvrm.character.action) {
-          // Stop animation
-          gvrm.character.action.stop();
-          // Reset to default pose
-          GVRMUtils.resetPose(gvrm.character, gvrm.boneOperations);
-        }
-      }
-    } else {
-      stateAnim = "play";
-      for (const gvrm of gvrms) {
-        if (gvrm && gvrm.character && gvrm.character.action) {
-          // Resume animation
-          gvrm.character.action.reset();
-          gvrm.character.action.play();
-        }
-      }
-    }
-  }
-
-  // Enable debug features only when N=1
-  if (N === 1 && gvrms.length > 0) {
-    const gvrm = gvrms[0];
-    if (!gvrm || !gvrm.isReady) return;
-
-    if (event.code === "KeyX") {
-      // Toggle VRM mesh visibility
-      GVRMUtils.visualizeVRM(gvrm.character, null);
-    }
-    if (event.code === "KeyZ") {
-      // Toggle bone axes visibility
-      GVRMUtils.visualizeBoneAxes(gvrm, null);
-    }
-  }
-});
-
-// Drag and drop implementation
-container.addEventListener('dragover', (event) => {
-  event.preventDefault();
-  event.stopPropagation();
-
-  const file = event.dataTransfer.items[0];
-  if (file && file.type === '' && event.dataTransfer.items[0].getAsFile()?.name.endsWith('.gvrm')) {
-    container.style.backgroundColor = 'rgba(100, 100, 100, 0.2)';
-  }
-});
-
-container.addEventListener('dragleave', (event) => {
-  event.preventDefault();
-  event.stopPropagation();
-  container.style.backgroundColor = '';
-});
-
-container.addEventListener('drop', async (event) => {
-  event.preventDefault();
-  event.stopPropagation();
-  container.style.backgroundColor = '';
-
-  const files = event.dataTransfer.files;
-  if (files.length === 0) return;
-
-  const file = files[0];
-  if (!file.name.endsWith('.gvrm')) {
-    console.error('Not a .gvrm file');
-    return;
-  }
 
   // Get center character (index 0)
   const centerGVRM = gvrms[0];
@@ -829,7 +513,7 @@ container.addEventListener('drop', async (event) => {
   } catch (error) {
     console.error('Failed to load dropped GVRM:', error);
   }
-});
+;
 
 function updateRenderOrder() {
   if (!allModelsReady || gvrms.length === 0) return;
@@ -870,18 +554,8 @@ function animate() {
   if (virtualTime >= 24) {
     virtualTime -= 24; // Wrap around to 0 after 24 hours
 
-    // Stop current recording and save
-    if (isRecording) {
-      stopRecording();
-    }
 
     lastDayTime = virtualTime;
-  }
-
-  // Initialize recording if not started yet and models are ready
-  if (!recordingCanvas && gvrms.length > 0 && gvrms[0] && gvrms[0].isReady) {
-    initRecording();
-    startRecording();
   }
 
   // Update sky based on time
@@ -902,16 +576,6 @@ function animate() {
 
     hourHand.style.transform = `rotate(${hourDegrees}deg)`;
     minuteHand.style.transform = `rotate(${minuteDegrees}deg)`;
-  }
-
-  // Update speech bubbles
-  updateSpeechBubbles();
-
-  // Check for visible objects (Character 1's view) every N frames
-  detectionFrameCounter++;
-  if (detectionFrameCounter >= DETECTION_CHECK_INTERVAL) {
-    checkVisibleObjects();
-    detectionFrameCounter = 0;
   }
 
   for (let i = 0; i < gvrms.length; i++) {
@@ -937,54 +601,8 @@ function animate() {
   renderer.setScissorTest(true);
   renderer.render(scene, camera);
 
-  // Update and render character 1's first-person view
-  if (gvrms.length > 0 && gvrms[0] && gvrms[0].isReady && gvrms[0].character && gvrms[0].character.currentVrm) {
-    const character = gvrms[0].character.currentVrm.scene;
-
-    // Position camera at character's eye level
-    character1Camera.position.copy(character.position).add(
-      character1CameraOffset.clone().applyQuaternion(character.quaternion)
-    );
-
-    // Match character's rotation
-    character1Camera.quaternion.copy(character.quaternion);
-
-    // Render to bottom right viewport (above diary container)
-    const viewWidth = 240;
-    const viewHeight = 180;
-    const viewX = width - viewWidth - 20; // 20px from right edge
-    const viewY = 250; // 250px from bottom (above diary container)
-
-    character1Camera.aspect = viewWidth / viewHeight;
-    character1Camera.updateProjectionMatrix();
-
-    renderer.setViewport(viewX, viewY, viewWidth, viewHeight);
-    renderer.setScissor(viewX, viewY, viewWidth, viewHeight);
-    renderer.render(scene, character1Camera);
-  }
-
   renderer.setScissorTest(false);
 
-  // Render to recording canvas (Character 1's view)
-  if (recordingRenderer && isRecording && gvrms.length > 0 && gvrms[0] && gvrms[0].isReady && gvrms[0].character && gvrms[0].character.currentVrm) {
-    const character = gvrms[0].character.currentVrm.scene;
-
-    // Position camera at character's eye level
-    character1Camera.position.copy(character.position).add(
-      character1CameraOffset.clone().applyQuaternion(character.quaternion)
-    );
-
-    // Match character's rotation
-    character1Camera.quaternion.copy(character.quaternion);
-
-    character1Camera.aspect = 640 / 480;
-    character1Camera.updateProjectionMatrix();
-
-    recordingRenderer.render(scene, character1Camera);
-  }
-
-  fpsc.update();
-  requestAnimationFrame(animate);
 }
 
 animate();
