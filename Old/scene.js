@@ -10,7 +10,7 @@ export async function loadCity(scene) {
 
   // Adjust path for your structure / GitHub Pages
   // e.g. '/your-repo/assets/city.glb' or './assets/city.glb'
-  const gltf = await loader.loadAsync('./assets/city.glb');
+  const gltf = await loader.loadAsync('./city.glb');
 
   const city = gltf.scene;
 
