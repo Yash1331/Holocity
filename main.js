@@ -11,7 +11,6 @@ import { createSky, updateSky, loadCity, enableFog } from './scene.js';
 import { Walker } from './walker.js';
 
 // UI
-const container = document.getElementById('threejs-container');
 let width = window.innerWidth;
 let height = window.innerHeight;
 
@@ -20,7 +19,6 @@ const params = new URL(window.location.href).searchParams;
 
 // renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-container.appendChild(renderer.domElement);
 renderer.setSize(width, height);
 
 // camera
