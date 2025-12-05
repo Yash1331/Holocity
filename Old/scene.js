@@ -43,11 +43,6 @@ export function createSky(scene) {
   return sky;
 }
 
-// Optional: enable fog on the scene for atmospheric depth
-export function enableFog(scene, color = 0x222233, near = 10, far = 400) {
-  scene.fog = new THREE.Fog(color, near, far);
-}
-
 // Animate sky over timeOfDay in [0, 24)
 export function updateSky(sky, timeOfDay) {
   const sky_uniforms = sky.material.uniforms;
