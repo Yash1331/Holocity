@@ -33,7 +33,7 @@ export async function buildScene(scene) {
   // Load low-poly city
   const loader = new GLTFLoader();
   return new Promise((resolve, reject) => {
-    loader.load('./City.glb', (gltf) => {
+    loader.load('./city.glb', (gltf) => {
       city = gltf.scene;
       city.scale.set(1, 1, 1);
       city.position.set(0, 0, 0); // You’ll fine-tune this with the gizmo
