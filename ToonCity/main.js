@@ -40,6 +40,7 @@ gvrm.character.transitionDuration = 0.2;
 
 // Create TransformControls for the city
 const transformControls = new TransformControls(camera, renderer.domElement);
+console.log('TransformControls instance:', transformControls);
 transformControls.visible = false;        // start hidden
 transformControls.enabled = false;
 transformControls.setMode('translate');   // default mode
@@ -60,20 +61,26 @@ window.addEventListener('keydown', (e) => {
 
   // Toggle gizmo on/off
   if (key === 'g') {
-    debugGizmoEnabled = !debugGizmoEnabled;
+  debugGizmoEnabled = !debugGizmoEnabled;
 
-    if (debugGizmoEnabled && city) {
+  if (debugGizmoEnabled) {
+    if (city) {
       transformControls.attach(city);
       transformControls.visible = true;
       transformControls.enabled = true;
       console.log('Debug gizmo ON: use mouse to move/scale the city');
     } else {
-      transformControls.detach();
-      transformControls.visible = false;
-      transformControls.enabled = false;
-      console.log('Debug gizmo OFF');
+      debugGizmoEnabled = false;
+      console.warn('City not loaded yet, gizmo cancelled');
     }
+  } else {
+    transformControls.detach();
+    transformControls.visible = false;
+    transformControls.enabled = false;
+    console.log('Debug gizmo OFF');
   }
+}
+
 
   // While gizmo is active, allow switching between move/scale modes
   if (debugGizmoEnabled) {
