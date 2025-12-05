@@ -15,9 +15,9 @@ export async function loadCity(scene) {
   const city = gltf.scene;
 
   // Tweak transform so the city sits nicely in front of the camera
-  city.position.set(0, -0.15, 0);
+  city.position.set(0, 0, 0);
   city.rotation.set(0, 0, 0);
-  city.scale.set(0.75, 0.75, 0.75);
+  city.scale.set(1,1, 1);
 
   // Make meshes cast/receive shadows if you use lights + shadows
   city.traverse((obj) => {
