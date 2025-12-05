@@ -109,6 +109,7 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+
 // Main loop
 renderer.setAnimationLoop(async () => {
   const now = performance.now();
