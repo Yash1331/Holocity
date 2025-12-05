@@ -118,7 +118,6 @@ renderer.setAnimationLoop(async () => {
 
   gvrm.update();
   controls.update();
-  transformControls.updateMatrixWorld(); // keep gizmo in sync
 
   const isBoosting = keys['shift'] || keys['arrowdown'];
   const currentSpeed = (isBoosting ? speed * speedBoost : speed) * deltaScale;
