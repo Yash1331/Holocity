@@ -88,13 +88,6 @@
     camera.position.set(2.4, 2.4, 4);
     camera.lookAt(0, 1, 0);
 
-    // Camera controls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 1, 0);  // Look at character center
-    controls.enablePan = false;  // Disable panning
-    controls.enableZoom = false;  // Disable OrbitControls zoom (we use custom wheel zoom)
-    controls.update();
-
     // controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.screenSpacePanning = true;
