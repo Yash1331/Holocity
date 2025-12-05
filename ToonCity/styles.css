@@ -1,0 +1,22 @@
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: #222;
+}
+#canvas {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+#commands {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: white;
+  font-family: monospace;
+  font-size: 12px;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 10px;
+  border-radius: 5px;
+  line-height: 1.5;
+}
