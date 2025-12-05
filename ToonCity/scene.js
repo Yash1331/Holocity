@@ -36,7 +36,7 @@ export async function buildScene(scene) {
     loader.load('./city.glb', (gltf) => {
       city = gltf.scene;
       city.scale.set(1, 1, 1);
-      city.position.set(0, 0, 0); // You’ll fine-tune this with the gizmo
+      city.position.set(0, -1, 0); // You’ll fine-tune this with the gizmo
       scene.add(city);
       resolve(city);
     }, undefined, reject);
