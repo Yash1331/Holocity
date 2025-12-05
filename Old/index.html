@@ -63,8 +63,6 @@
     import * as THREE from 'three';
     import { GVRM } from 'gvrm';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { Sky } from 'three/addons/objects/Sky.js';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
     const canvas = document.getElementById('canvas');
     const infoDiv = document.getElementById('info');
@@ -87,45 +85,6 @@
     controls.enablePan = false;  // Disable panning
     controls.enableZoom = false;  // Disable OrbitControls zoom (we use custom wheel zoom)
     controls.update();
-
-    // Load your city/world GLB
-export async function loadCity(scene) {
-  const loader = new GLTFLoader();
-
-  // Adjust path for your structure / GitHub Pages
-  // e.g. '/your-repo/assets/city.glb' or './assets/city.glb'
-  const gltf = await loader.loadAsync('./city.glb');
-
-  const city = gltf.scene;
-
-  // Tweak transform so the city sits nicely in front of the camera
-  city.position.set(0, 0, 0);
-  city.rotation.set(0, 0, 0);
-  city.scale.set(1,1, 1);
-
-  // Make meshes cast/receive shadows if you use lights + shadows
-  city.traverse((obj) => {
-    if (obj.isMesh) {
-      obj.castShadow = true;
-      obj.receiveShadow = true;
-      // Optional: ensure correct color space
-      if (obj.material && obj.material.map) {
-        obj.material.map.encoding = THREE.sRGBEncoding;
-      }
-    }
-  });
-
-  scene.add(city);
-  return city;
-}
-
-// Create procedural sky dome
-export function createSky(scene) {
-  const sky = new Sky();
-  sky.scale.setScalar(450000);
-  scene.add(sky);
-  return sky;
-}
 
     // GVRM
     let gvrm = await GVRM.load('./avatars/sample.gvrm', scene, camera, renderer);
