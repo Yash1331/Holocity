@@ -25,8 +25,9 @@ export async function buildScene(scene) {
   sky.material.uniforms['mieCoefficient'].value = 0.002;
   sky.material.uniforms['mieDirectionalG'].value = 0.988;
 
-  const phi = THREE.MathUtils.degToRad( 90 - 45 );
-  const theta = THREE.MathUtils.degToRad( 105 );
+    const sun = new THREE.Vector3();
+    const phi = THREE.MathUtils.degToRad( 90 - 45 );
+    const theta = THREE.MathUtils.degToRad( 105 );
   
   sun.setFromSphericalCoords( 1, phi, theta );
   uniforms[ 'sunPosition' ].value.copy( sun );
