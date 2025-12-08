@@ -130,6 +130,6 @@ renderer.setAnimationLoop(() => {
       character.position.z -= currentSpeed * Math.cos(angle);
     }
   }
-
+	renderer.toneMappingExposure = 0.1764;
   renderer.render(scene, camera);
 });

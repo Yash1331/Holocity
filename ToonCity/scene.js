@@ -32,8 +32,6 @@ export async function buildScene(scene) {
   sun.setFromSphericalCoords( 1, phi, theta );
   sky.material.uniforms[ 'sunPosition' ].value.copy( sun );
 
-	renderer.toneMappingExposure = 0.1764;
-
   // Load low-poly city from GLTF with Draco compression
   const loader = new GLTFLoader();
   const dracoLoader = new DRACOLoader();
