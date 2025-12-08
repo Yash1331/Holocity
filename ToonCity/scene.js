@@ -39,7 +39,7 @@ export async function buildScene(scene) {
   return new Promise((resolve, reject) => {
     loader.load(
       // If setPath is NOT used, give the full relative path here:
-      './assets/GLTF/Lowpoly_City.gltf',
+      './GLTF/Lowpoly_City.gltf',
       (gltf) => {
         city = gltf.scene;
         city.scale.set(0.5, 0.5, 0.5);     // tweak as needed
