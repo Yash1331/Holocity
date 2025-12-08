@@ -36,7 +36,7 @@ export async function buildScene(scene) {
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.114.0/examples/jsm/loaders/DRACOLoader.js');
   loader.setDRACOLoader(dracoLoader);
-  const city = await loader.loadAsync('./GLTF/Lowpoly_city.gltf');
+  const city = await loader.loadAsync('./GLTF/Lowpoly_City.gltf');
   city.scene.scale.setScalar(0.05);
   city.scene.position.set(0, -1, 0);  
   scene.add(city); 
