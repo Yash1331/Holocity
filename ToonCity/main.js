@@ -13,7 +13,12 @@ renderer.setPixelRatio(window.devicePixelRatio);
 const scene = new THREE.Scene();
 
 // Camera
-const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.01, 100);
+const camera = new THREE.PerspectiveCamera(
+  65,
+  window.innerWidth / window.innerHeight,
+  0.01,
+  100
+);
 camera.position.set(2.4, 2.4, 4);
 camera.lookAt(0, 1, 0);
 
@@ -36,70 +41,46 @@ await gvrm.changeFBX('./animations/Walking.fbx');
 gvrm.character.action.play();
 gvrm.character.transitionDuration = 0.2;
 
-// ---------- DEBUG GIZMO FOR CITY (MOVE + SCALE) ----------
+// ---------- DEBUG GIZMO FOR CITY ONLY ----------
 
-// Create TransformControls for the city
+// Create TransformControls and add once
 const transformControls = new TransformControls(camera, renderer.domElement);
-console.log('TransformControls instance:', transformControls);
-transformControls.visible = false;        // start hidden
-transformControls.enabled = false;
-transformControls.setMode('translate');   // default mode
 scene.add(transformControls);
 
-// Prevent OrbitControls from interfering while dragging the gizmo
-transformControls.addEventListener('mouseDown', () => {
-  controls.enabled = false;
-});
-transformControls.addEventListener('mouseUp', () => {
-  controls.enabled = true;
-});
+// Attach to city once it is available
+const waitForCity = () => {
+  if (city) {
+    transformControls.attach(city);
 
-// Toggle debug gizmo with key: G
-let debugGizmoEnabled = false;
-window.addEventListener('keydown', (e) => {
-  const key = e.key.toLowerCase();
+    // Start in translate mode for positioning
+    transformControls.setMode('translate');
 
-  // Toggle gizmo on/off
-  if (key === 'g') {
-  debugGizmoEnabled = !debugGizmoEnabled;
-
-  if (debugGizmoEnabled) {
-    if (city) {
-      transformControls.attach(city);
-      transformControls.visible = true;
-      transformControls.enabled = true;
-      console.log('Debug gizmo ON: use mouse to move/scale the city');
-    } else {
-      debugGizmoEnabled = false;
-      console.warn('City not loaded yet, gizmo cancelled');
-    }
+    // Adjust gizmo size if needed (handles size vs. scene scale)
+    transformControls.setSize(1.0); // tweak if city is very large/small
   } else {
-    transformControls.detach();
-    transformControls.visible = false;
-    transformControls.enabled = false;
-    console.log('Debug gizmo OFF');
+    requestAnimationFrame(waitForCity);
   }
-}
+};
+waitForCity();
 
-
-  // While gizmo is active, allow switching between move/scale modes
-  if (debugGizmoEnabled) {
-    if (key === '1') {
-      transformControls.setMode('translate'); // move
-      console.log('Gizmo mode: translate');
-    }
-    if (key === '2') {
-      transformControls.setMode('scale'); // scale
-      console.log('Gizmo mode: scale');
-    }
-  }
+// Disable OrbitControls while dragging the gizmo to avoid conflicts
+transformControls.addEventListener('dragging-changed', (event) => {
+  controls.enabled = !event.value;
 });
+
+// If you ever want to change mode from code (no key listeners):
+// transformControls.setMode('scale');
+// transformControls.setMode('rotate');
 
 // ---------- MOVEMENT / INPUT FOR AVATAR ----------
 
 const keys = {};
-window.addEventListener('keydown', (e) => (keys[e.key.toLowerCase()] = true));
-window.addEventListener('keyup', (e) => (keys[e.key.toLowerCase()] = false));
+window.addEventListener('keydown', (e) => {
+  keys[e.key.toLowerCase()] = true;
+});
+window.addEventListener('keyup', (e) => {
+  keys[e.key.toLowerCase()] = false;
+});
 
 let lastTime = performance.now();
 const targetFPS = 60;
@@ -116,9 +97,8 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-
-// Main loop
-renderer.setAnimationLoop(async () => {
+// Main loop (no async needed)
+renderer.setAnimationLoop(() => {
   const now = performance.now();
   const deltaTime = now - lastTime;
   lastTime = now;
@@ -129,9 +109,12 @@ renderer.setAnimationLoop(async () => {
 
   const isBoosting = keys['shift'] || keys['arrowdown'];
   const currentSpeed = (isBoosting ? speed * speedBoost : speed) * deltaScale;
-  const currentRotationSpeed = (isBoosting ? rotationSpeed * speedBoost : rotationSpeed) * deltaScale;
+  const currentRotationSpeed =
+    (isBoosting ? rotationSpeed * speedBoost : rotationSpeed) * deltaScale;
 
-  // Disable avatar movement while dragging gizmo, but allow when gizmo is idle
+  // Avatar movement (unchanged), still allowed even while gizmo exists.
+  // Only blocked while the user is actively dragging the gizmo,
+  // which is the usual pattern when combining TransformControls and OrbitControls. [web:24]
   if (!transformControls.dragging) {
     if (keys['a']) character.rotation.y += currentRotationSpeed;
     if (keys['d']) character.rotation.y -= currentRotationSpeed;

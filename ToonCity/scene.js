@@ -30,15 +30,25 @@ export async function buildScene(scene) {
   sun.setFromSphericalCoords(1, phi, theta);
   sky.material.uniforms['sunPosition'].value.copy(sun);
 
-  // Load low-poly city
+  // Load low-poly city from GLTF
   const loader = new GLTFLoader();
+
+  // Optional: if needed, set a base path for external bin/textures
+  // loader.setPath('./assets/GLTF/');
+
   return new Promise((resolve, reject) => {
-    loader.load('./city.glb', (gltf) => {
-      city = gltf.scene;
-      city.scale.set(1, 1, 1);
-      city.position.set(0, -1.1, 0); // You’ll fine-tune this with the gizmo
-      scene.add(city);
-      resolve(city);
-    }, undefined, reject);
+    loader.load(
+      // If setPath is NOT used, give the full relative path here:
+      './assets/GLTF/Lowpoly_City.gltf',
+      (gltf) => {
+        city = gltf.scene;
+        city.scale.set(0.5, 0.5, 0.5);     // tweak as needed
+        city.position.set(0, -1, 0);       // tweak as needed
+        scene.add(city);
+        resolve(city);
+      },
+      undefined,
+      reject
+    );
   });
 }
