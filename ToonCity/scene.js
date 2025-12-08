@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { Sky } from 'three/addons/objects/Sky.js';
 
 // Export a reference so main.js can access the loaded city
@@ -32,23 +33,12 @@ export async function buildScene(scene) {
 
   // Load low-poly city from GLTF
   const loader = new GLTFLoader();
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.114.0/examples/jsm/loaders/DRACOLoader.js');
+  loader.setDRACOLoader(dracoLoader);
+  const city = await loader.loadAsync('./GLTF/Lowpoly_city.gltf');
+  city.scene.scale.setScalar(0.05);
+  city.scene.position.set(0, -1, 0);  
+  scene.add(city); 
 
-  // Optional: if needed, set a base path for external bin/textures
-  // loader.setPath('./assets/GLTF/');
-
-  return new Promise((resolve, reject) => {
-    loader.load(
-      // If setPath is NOT used, give the full relative path here:
-      './GLTF/Lowpoly_City.gltf',
-      (gltf) => {
-        city = gltf.scene;
-        city.scale.set(0.5, 0.5, 0.5);     // tweak as needed
-        city.position.set(0, -1, 0);       // tweak as needed
-        scene.add(city);
-        resolve(city);
-      },
-      undefined,
-      reject
-    );
-  });
 }
