@@ -45,6 +45,7 @@ gvrm.character.transitionDuration = 0.2;
 
 // Create TransformControls and add once
 const transformControls = new TransformControls(camera, renderer.domElement);
+console.log(transformControls);
 scene.add(transformControls);
 
 // Attach to city once it is available
