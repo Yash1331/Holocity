@@ -40,7 +40,7 @@ export async function buildScene(scene) {
 
   const gltf = await loader.loadAsync('./GLTF/Lowpoly_City.gltf');
   city = gltf.scene;
-  city.scale.setScalar(0.05);
-  city.position.set(0, -1, 0);
+  city.scale.setScalar(0.5);
+  city.position.set(0, 0, 0);
   scene.add(city);
 }
