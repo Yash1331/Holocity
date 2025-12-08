@@ -20,17 +20,18 @@ export async function buildScene(scene) {
   const sky = new Sky();
   sky.scale.setScalar(450000);
   scene.add(sky);
-  sky.material.uniforms['turbidity'].value = 8;
+  sky.material.uniforms['turbidity'].value = 2.8;
   sky.material.uniforms['rayleigh'].value = 2;
-  sky.material.uniforms['mieCoefficient'].value = 0.005;
-  sky.material.uniforms['mieDirectionalG'].value = 0.8;
+  sky.material.uniforms['mieCoefficient'].value = 0.002;
+  sky.material.uniforms['mieDirectionalG'].value = 0.988;
 
-  // Set sun at 45° angle (midday look)
-  const sun = new THREE.Vector3();
-  const phi = THREE.MathUtils.degToRad(45); // Elevation
-  const theta = THREE.MathUtils.degToRad(180); // Azimuth (can be adjusted for direction)
-  sun.setFromSphericalCoords(1, phi, theta);
-  sky.material.uniforms['sunPosition'].value.copy(sun);
+  const phi = THREE.MathUtils.degToRad( 90 - 45 );
+  const theta = THREE.MathUtils.degToRad( 105 );
+  
+  sun.setFromSphericalCoords( 1, phi, theta );
+  uniforms[ 'sunPosition' ].value.copy( sun );
+
+	renderer.toneMappingExposure = 0.1764;
 
   // Load low-poly city from GLTF with Draco compression
   const loader = new GLTFLoader();
@@ -41,6 +42,6 @@ export async function buildScene(scene) {
   const gltf = await loader.loadAsync('./GLTF/Lowpoly_City.gltf');
   city = gltf.scene;
   city.scale.setScalar(0.5);
-  city.position.set(0, 0, 0);
+  city.position.set(0, -1, 0);
   scene.add(city);
 }
