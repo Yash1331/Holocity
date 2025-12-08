@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader } from "https://cdn.jsdelivr.net/npm/three@0.114.0/examples/jsm/loaders/DRACOLoader.js";
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 
 // Export a reference so main.js can access the loaded city
@@ -25,20 +25,22 @@ export async function buildScene(scene) {
   sky.material.uniforms['mieCoefficient'].value = 0.005;
   sky.material.uniforms['mieDirectionalG'].value = 0.8;
 
+  // Set sun at 45° angle (midday look)
   const sun = new THREE.Vector3();
-  const phi = THREE.MathUtils.degToRad(85);
-  const theta = THREE.MathUtils.degToRad(180);
+  const phi = THREE.MathUtils.degToRad(45); // Elevation
+  const theta = THREE.MathUtils.degToRad(180); // Azimuth (can be adjusted for direction)
   sun.setFromSphericalCoords(1, phi, theta);
   sky.material.uniforms['sunPosition'].value.copy(sun);
 
-  // Load low-poly city from GLTF
+  // Load low-poly city from GLTF with Draco compression
   const loader = new GLTFLoader();
   const dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.114.0/examples/jsm/loaders/DRACOLoader.js');
+  dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/libs/draco/');
   loader.setDRACOLoader(dracoLoader);
-  const city = await loader.loadAsync('./GLTF/Lowpoly_City.gltf');
-  city.scene.scale.setScalar(0.05);
-  city.scene.position.set(0, -1, 0);  
-  scene.add(city); 
 
+  const gltf = await loader.loadAsync('./GLTF/Lowpoly_City.gltf');
+  city = gltf.scene;
+  city.scale.setScalar(0.05);
+  city.position.set(0, -1, 0);
+  scene.add(city);
 }
