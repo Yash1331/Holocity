@@ -35,7 +35,7 @@ export async function buildScene(scene) {
   // Load low-poly city from GLTF with Draco compression
   const loader = new GLTFLoader();
   const dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/libs/draco/');
+  dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/libs/draco/');
   loader.setDRACOLoader(dracoLoader);
 
   const gltf = await loader.loadAsync('./GLTF/Lowpoly_City.gltf');
