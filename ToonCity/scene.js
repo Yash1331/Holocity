@@ -30,7 +30,7 @@ export async function buildScene(scene) {
     const theta = THREE.MathUtils.degToRad( 105 );
   
   sun.setFromSphericalCoords( 1, phi, theta );
-  uniforms[ 'sunPosition' ].value.copy( sun );
+  sky.material.uniforms[ 'sunPosition' ].value.copy( sun );
 
 	renderer.toneMappingExposure = 0.1764;
 
