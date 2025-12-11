@@ -40,7 +40,7 @@ function init() {
   // Load GLTF
   const loader = new GLTFLoader();
   loader.load(
-    './GLTF/Lowpoly_City.gltf',
+    'GLTF/Lowpoly_City.gltf',
     (gltf) => {
       const root = gltf.scene;
       scene.add(root);
