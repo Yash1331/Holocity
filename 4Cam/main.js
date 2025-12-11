@@ -6,11 +6,25 @@ let renderer, scene;
 let mainCamera;
 let splitCameras = [];
 let useSplitView = false;
+let city;
+
+ async function loadCity() {
+  const loader = new GLTFLoader();
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/libs/draco/');
+  loader.setDRACOLoader(dracoLoader);
+
+  const gltf = await loader.loadAsync('./GLTF/Lowpoly_City.gltf');
+  city = gltf.scene;
+  city.scale.setScalar(0.3002599999964239);
+  city.position.set(0, -1.1707599999964238, 0);
+  scene.add(city);
+}
 
 init();
 animate();
 
-function init() {
+async function init() {
   // Renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -37,6 +51,8 @@ function init() {
 
   // Create 4 cameras for 360° split view
   createSplitCameras();
+
+  await loadCity();  // load the city after scene/cameras exist
 
   // Handle resize
   window.addEventListener('resize', onWindowResize);
@@ -76,18 +92,6 @@ function createSplitCameras() {
     splitCameras.push(cam);
   }
 }
-
- // Load low-poly city from GLTF with Draco compression
-  const loader = new GLTFLoader();
-  const dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/libs/draco/');
-  loader.setDRACOLoader(dracoLoader);
-
-  const gltf = await loader.loadAsync('./GLTF/Lowpoly_City.gltf');
-  city = gltf.scene;
-  city.scale.setScalar(0.3002599999964239);
-  city.position.set(0, -1.1707599999964238, 0);
-  scene.add(city);
 
 function onWindowResize() {
   // Update main camera
