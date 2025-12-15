@@ -57,8 +57,8 @@ export class CameraRig {
   initGUI() {
     const gui = new GUI();
     const params = {
-      frontFOV: 180,
-      backFOV: 180,
+      frontFOV: 90,
+      backFOV: 90,
       switchCamera: () => this.toggleMode()
     };
 
