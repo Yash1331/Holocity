@@ -24,7 +24,7 @@ export class CameraRig {
   }
 
   createCamera(rotationY) {
-    const fov = 90; // horizontal FOV
+    const fov = 180; // horizontal FOV
     const vfov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(fov / 2)) / this.aspectRatio);
     const vfovDeg = THREE.MathUtils.radToDeg(vfov);
 

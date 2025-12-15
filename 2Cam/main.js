@@ -76,7 +76,7 @@ function render() {
 }
 
 // controls
-const controls = new OrbitControls(camera, renderer.domElement);
+const controls = new OrbitControls(CameraRig, renderer.domElement);
 controls.screenSpacePanning = true;
 controls.target.set(0.0, 0.8, 0.0);
 controls.minDistance = 0.1;
@@ -86,7 +86,7 @@ controls.enableZoom = false;
 controls.enablePan = false;
 controls.update();
 
-const controls2 = new TrackballControls(camera, renderer.domElement);
+const controls2 = new TrackballControls(CameraRig, renderer.domElement);
 controls2.noRotate = true;
 controls2.target.set(0.0, 0.4, 0.0);
 controls2.noPan = false;
