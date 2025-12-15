@@ -112,7 +112,7 @@ const characterNames = {
   'sample9.gvrm': 'なまちゃん'
 };
 
-let N = 2; // number of models to load (max gvrmFiles.length)
+let N = 1; // number of models to load (max gvrmFiles.length)
 
 // Track current animation state for each model
 const modelAnimations = [];
