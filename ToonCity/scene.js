@@ -33,7 +33,7 @@ export async function buildScene(scene) {
   sun.setFromSphericalCoords( 1, phi, theta );
   sky.material.uniforms[ 'sunPosition' ].value.copy( sun );
 
-  // Load low-poly city from GLTF with Draco compression
+  // Load city from GLTF with Draco compression
   const loader = new GLTFLoader();
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/libs/draco/');

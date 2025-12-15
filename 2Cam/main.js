@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
@@ -72,6 +74,26 @@ function render() {
     renderer.setScissorTest(false);
   }
 }
+
+// controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.screenSpacePanning = true;
+controls.target.set(0.0, 0.8, 0.0);
+controls.minDistance = 0.1;
+controls.maxDistance = 50;
+controls.enableDamping = true;
+controls.enableZoom = false;
+controls.enablePan = false;
+controls.update();
+
+const controls2 = new TrackballControls(camera, renderer.domElement);
+controls2.noRotate = true;
+controls2.target.set(0.0, 0.4, 0.0);
+controls2.noPan = false;
+controls2.noZoom = false;
+controls2.zoomSpeed = 0.25;
+controls2.useDummyMouseWheel = true;
+controls2.update();
 
 function animate() {
   requestAnimationFrame(animate);

@@ -7,7 +7,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { GVRM, GVRMUtils } from 'gvrm';
 import { FPSCounter } from './utils/fps.js';
-import { createSky, updateSky, loadCity, enableFog } from './scene.js';
+import { createSky, loadCity, enableFog } from './scene.js';
 import { Walker } from './walker.js';
 
 // UI
@@ -76,9 +76,6 @@ loadCity(scene).then(c => {
   console.error('Failed to load city:', err);
 });
 
-// Time system (accelerated time, 24 hours in 1 real minute)
-let virtualTime = 8; // Start at 8:00 AM (in hours, 0-24)
-const timeSpeed = 24 / 60; // 60 real seconds = 24 virtual hours, so 1 second = 0.4 hours = 24 minutes
 
 const fbxFiles = [
   './assets/Breathing.fbx',
