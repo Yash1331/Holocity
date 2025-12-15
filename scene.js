@@ -16,7 +16,7 @@ export async function loadCity(scene) {
     loader.setMeshoptDecoder(MeshoptDecoder);
   
   
-    const gltf = await loader.loadAsync('./City/City.gltf');
+    const gltf = await loader.loadAsync('./2Cam/City/City.gltf');
     city = gltf.scene;
     city.scale.setScalar(1);
     city.position.set(0, -1.1707599999964238, 0);
