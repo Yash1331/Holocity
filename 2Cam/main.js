@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { CameraRig } from './camera.js';
 
 let renderer, scene, city, rig;
@@ -33,6 +34,7 @@ async function loadCity() {
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/libs/draco/');
   loader.setDRACOLoader(dracoLoader);
+  loader.setMeshoptDecoder(MeshoptDecoder);
 
   const gltf = await loader.loadAsync('./City/City.gltf');
   city = gltf.scene;

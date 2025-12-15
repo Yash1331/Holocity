@@ -37,6 +37,8 @@ export async function buildScene(scene) {
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/libs/draco/');
   loader.setDRACOLoader(dracoLoader);
+  loader.setMeshoptDecoder(MeshoptDecoder);
+
 
   const gltf = await loader.loadAsync('./City/City.gltf');
   city = gltf.scene;
