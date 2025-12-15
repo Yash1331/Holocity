@@ -43,7 +43,7 @@ export async function buildScene(scene) {
 
   const gltf = await loader.loadAsync('./City/City.gltf');
   city = gltf.scene;
-  city.scale.setScalar(12);
-  city.position.set( 0, -20, -70);
+  city.scale.setScalar(10);
+  city.position.set( 0, -30, -700);
   scene.add(city);
 }
