@@ -112,9 +112,7 @@ const characterNames = {
   'sample9.gvrm': 'なまちゃん'
 };
 
-// Limit avatar count to not exceed gvrmFiles length
-const requestedN = parseInt(params.get('n')) || 4;
-let N = Math.min(requestedN, gvrmFiles.length); // Max 9 avatars
+let N = 2; // number of models to load (max gvrmFiles.length)
 
 // Track current animation state for each model
 const modelAnimations = [];
