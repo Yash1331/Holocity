@@ -6,13 +6,16 @@ import { CameraRig } from './camera.js';
 
 let renderer, scene, city, rig;
 
+const desiredWidth = 8768;
+const desiredHeight = 1000;
+
 init();
 animate();
 
 async function init() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(desiredWidth, desiredHeight, false);
+  renderer.setPixelRatio(1);
   document.body.appendChild(renderer.domElement);
 
   scene = new THREE.Scene();
@@ -44,7 +47,7 @@ async function loadCity() {
 }
 
 function onResize() {
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(desiredWidth, desiredHeight);
 }
 
 function render() {
@@ -54,7 +57,7 @@ function render() {
     renderer.render(scene, cams[0]);
   } else {
     renderer.setScissorTest(true);
-    const halfWidth = window.innerWidth / 2;
+    const halfWidth = desiredWidth / 2;
 
     // Front camera
     renderer.setViewport(0, 0, halfWidth, window.innerHeight);
