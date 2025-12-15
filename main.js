@@ -244,37 +244,6 @@ function animate() {
     return;
   }
 
-  // Update virtual time (1 frame ≈ 0.016s at 60fps, so time advances by ~0.016 * timeSpeed per frame)
-  virtualTime += timeSpeed / 60; // timeSpeed is per second, so divide by 60 for per-frame
-
-  // Check if a full day has passed (24 hours)
-  if (virtualTime >= 24) {
-    virtualTime -= 24; // Wrap around to 0 after 24 hours
-
-
-    lastDayTime = virtualTime;
-  }
-
-  // Update sky based on time
-  updateSky(sky, virtualTime);
-
-  // Update analog clock
-  const hours = Math.floor(virtualTime) % 12; // 12-hour format (integer part only)
-  const minutes = (virtualTime - Math.floor(virtualTime)) * 60;
-
-  const hourHand = document.getElementById('hour-hand');
-  const minuteHand = document.getElementById('minute-hand');
-
-  if (hourHand && minuteHand) {
-    // Hour hand: 30 degrees per hour + 0.5 degrees per minute
-    const hourDegrees = (hours * 30) + (minutes * 0.5);
-    // Minute hand: 6 degrees per minute
-    const minuteDegrees = minutes * 6;
-
-    hourHand.style.transform = `rotate(${hourDegrees}deg)`;
-    minuteHand.style.transform = `rotate(${minuteDegrees}deg)`;
-  }
-
   for (let i = 0; i < gvrms.length; i++) {
     const gvrm = gvrms[i];
     if (gvrm && gvrm.isReady) {
