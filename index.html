@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <head>
-  <title>GVRM Multi Avatar Viewer</title>
+  <title>GVRM Multi Avatar Viewer + Scene</title>
   <style>
     body {
       margin: 0;
@@ -41,7 +41,8 @@
         "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
         "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
         "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.1.0/lib/three-vrm.module.js",
-        "gvrm": "https://naruya.github.io/gs-edit/lib/gaussian-vrm.min.js"
+        "gvrm": "https://naruya.github.io/gs-edit/lib/gaussian-vrm.min.js",
+        "./scene.js": "./scene.js"
       }
     }
   </script>
@@ -50,6 +51,7 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GVRM } from 'gvrm';
+    import { buildScene } from './scene.js';
 
     const canvas = document.getElementById('canvas');
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -57,21 +59,22 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x222222);
 
-    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.01, 100);
-    camera.position.set(2.4, 2.0, 6);
+    const camera = new THREE.PerspectiveCamera(
+      65,
+      window.innerWidth / window.innerHeight,
+      0.01,
+      100
+    );
+    camera.position.set(2.4, 2.0, 8);
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(2, 1.2, 0);
+    controls.target.set(2.5, 1.2, 0);
     controls.enablePan = false;
     controls.update();
 
-    // Lighting
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(3, 5, 2);
-    scene.add(dirLight);
+    // Build your custom backdrop (sky + city)
+    await buildScene(scene);
 
     // Avatar container
     const gvRMs = [];
@@ -89,7 +92,7 @@
       './animations/Flying.fbx'
     ];
 
-    // Load default avatars
+    // Load default avatars (optional; keep or remove if you prefer empty slots)
     for (let i = 0; i < avatarPaths.length; i++) {
       try {
         const g = await GVRM.load(avatarPaths[i], scene, camera, renderer);
@@ -101,10 +104,11 @@
         gvRMs.push(g);
       } catch (err) {
         console.warn(`Could not load ${avatarPaths[i]}`, err);
+        gvRMs.push(null);
       }
     }
 
-    // Handle resizing
+    // Resize handling
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -113,42 +117,56 @@
 
     // Mouse wheel zoom
     const minDistance = 2.0;
-    const maxDistance = 20.0;
-    window.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const dir = new THREE.Vector3();
-      dir.subVectors(camera.position, controls.target).normalize();
-      const distance = camera.position.distanceTo(controls.target);
-      let newDist = distance + e.deltaY * 0.002;
-      newDist = Math.max(minDistance, Math.min(maxDistance, newDist));
-      camera.position.copy(controls.target).add(dir.multiplyScalar(newDist));
-      controls.update();
-    }, { passive: false });
+    const maxDistance = 25.0;
+    window.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        const dir = new THREE.Vector3();
+        dir.subVectors(camera.position, controls.target).normalize();
+        const distance = camera.position.distanceTo(controls.target);
+        let newDist = distance + e.deltaY * 0.002;
+        newDist = Math.max(minDistance, Math.min(maxDistance, newDist));
+        camera.position.copy(controls.target).add(dir.multiplyScalar(newDist));
+        controls.update();
+      },
+      { passive: false }
+    );
 
-    // Key controls: load local avatar or restart animation
+    // Keyboard: 1–4 to load avatar for each slot, 0 to resync animations
     window.addEventListener('keydown', async (e) => {
       const key = e.key;
+
       if (key >= '1' && key <= '4') {
         const index = parseInt(key) - 1;
         try {
           const fileHandles = await window.showOpenFilePicker({
             multiple: false,
-            types: [{ description: 'GVRM Avatar', accept: { 'application/octet-stream': ['.gvrm'] } }]
+            types: [
+              {
+                description: 'GVRM Avatar',
+                accept: { 'application/octet-stream': ['.gvrm'] }
+              }
+            ]
           });
           const file = await fileHandles[0].getFile();
           const blob = new Blob([await file.arrayBuffer()]);
           const url = URL.createObjectURL(blob);
 
-          if (gvRMs[index]) await gvRMs[index].remove(scene);
+          if (gvRMs[index]) {
+            await gvRMs[index].remove(scene);
+          }
+
           const newGvrm = await GVRM.load(url, scene, camera, renderer);
           const model = newGvrm.character.currentVrm.scene;
           model.position.set(index * 1.8, 0, 0);
           model.scale.setScalar(0.75);
           await newGvrm.changeFBX(animations[index]);
           newGvrm.character.action.play();
+
           gvRMs[index] = newGvrm;
         } catch (err) {
-          console.warn('File load cancelled or failed:', err);
+          console.warn('Avatar load cancelled or failed:', err);
         }
       }
 
@@ -163,9 +181,11 @@
       }
     });
 
-    // Animation loop
+    // Render loop
     renderer.setAnimationLoop(() => {
-      for (const g of gvRMs) g?.update();
+      for (const g of gvRMs) {
+        g?.update();
+      }
       controls.update();
       renderer.render(scene, camera);
     });
