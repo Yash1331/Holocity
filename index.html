@@ -86,16 +86,30 @@
     controls.enableZoom = false;  // Disable OrbitControls zoom (we use custom wheel zoom)
     controls.update();
 
-    // GVRM
-    let gvrm = await GVRM.load('./avatars/sample.gvrm', scene, camera, renderer);
-    let character = gvrm.character.currentVrm.scene;
-    character.position.set(0, 0, 0);
-    character.scale.setScalar(0.75);
-    
+    // Create an array to hold the GVRM instances
+const gvRMs = [];
 
-    // Load Walking animation
-    await gvrm.changeFBX('./animations/Walking.fbx');
-    gvrm.character.action.play();
+// Load 4 avatars with slight X offsets
+const avatarPaths = [
+  './avatars/Avatar1.gvrm',  // You can use different .gvrm files here
+  './avatars/Avatar2.gvrm',
+  './avatars/Avatar3.gvrm',
+  './avatars/Avatar4.gvrm'
+];
+
+for (let i = 0; i < avatarPaths.length; i++) {
+  const gvrmInstance = await GVRM.load(avatarPaths[i], scene, camera, renderer);
+  const character = gvrmInstance.character.currentVrm.scene;
+  character.position.set(i * 1.5, 0, 0); // Spread along X-axis
+  character.scale.setScalar(0.75);
+
+  // Load walking animation for each avatar
+  await gvrmInstance.changeFBX('./animations/Walking.fbx');
+  gvrmInstance.character.action.play();
+
+  gvRMs.push(gvrmInstance);
+}
+
 
     // Set animation transition duration
     gvrm.character.transitionDuration = 0.2;
@@ -215,7 +229,7 @@
       lastTime = currentTime;
       const deltaScale = deltaTime / targetFrameTime; // 1.0 at 60 FPS
 
-      gvrm.update();
+      for (const g of gvRMs) g.update();
       controls.update();
 
       // Exit dance/jabcross mode if moving or rotating
