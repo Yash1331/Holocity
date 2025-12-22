@@ -28,12 +28,24 @@
 
 <body>
   <canvas id="canvas"></canvas>
+
   <div id="commands">
     <b>Controls</b><br>
     Keys 1–4: Load local avatars<br>
     Key 0: Restart all animations<br>
+    Key G: Toggle solid background<br>
+    Key K: Pick background color<br>
     Mouse Wheel: Zoom in/out
   </div>
+
+  <!-- hidden color picker for background -->
+  <input
+    id="bgColorPicker"
+    type="color"
+    value="#00ff00"
+    style="position:absolute; left:-9999px; top:-9999px;"
+  >
+
 
   <script type="importmap">
     {
@@ -61,6 +73,10 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     const scene = new THREE.Scene();
+    // Background control state
+    let useSolidBackground = true;
+    let solidBgColor = new THREE.Color(0x00ff00); // default green
+     
 
     const camera = new THREE.PerspectiveCamera(
       65,
@@ -110,6 +126,10 @@
       }
     }
 
+    
+  // DOM elements
+  const bgColorPicker = document.getElementById('bgColorPicker');
+
     // Resize handling
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -135,62 +155,77 @@
       { passive: false }
     );
 
-    // Keyboard: 1–4 to load avatar for each slot, 0 to resync animations
-    window.addEventListener('keydown', async (e) => {
-      const key = e.key;
+      // Color picker event
+  bgColorPicker.addEventListener('input', (e) => {
+    const hex = e.target.value;
+    solidBgColor.set(hex);
+    if (useSolidBackground) {
+      renderer.setClearColor(solidBgColor, 1);
+    }
+  });
 
-      if (key >= '1' && key <= '4') {
-        const index = parseInt(key) - 1;
-        try {
-          const fileHandles = await window.showOpenFilePicker({
-            multiple: false,
-            types: [
-              {
-                description: 'GVRM Avatar',
-                accept: { 'application/octet-stream': ['.gvrm'] }
-              }
-            ]
-          });
-          const file = await fileHandles[0].getFile();
-          const blob = new Blob([await file.arrayBuffer()]);
-          const url = URL.createObjectURL(blob);
+     // Keyboard controls
+  window.addEventListener('keydown', async (e) => {
+    const key = e.key.toLowerCase();
 
-          if (gvRMs[index]) {
-            await gvRMs[index].remove(scene);
-          }
+    // 1–4: Load local avatar
+    if (key >= '1' && key <= '4') {
+      const index = parseInt(key) - 1;
+      try {
+        const fileHandles = await window.showOpenFilePicker({
+          multiple: false,
+          types: [{ description: 'GVRM Avatar', accept: { 'application/octet-stream': ['.gvrm'] } }]
+        });
+        const file = await fileHandles[0].getFile();
+        const blob = new Blob([await file.arrayBuffer()]);
+        const url = URL.createObjectURL(blob);
 
-          const newGvrm = await GVRM.load(url, scene, camera, renderer);
-          const model = newGvrm.character.currentVrm.scene;
-          model.position.set(index * 1.8, 0, 0);
-          model.scale.setScalar(0.75);
-          await newGvrm.changeFBX(animations[index]);
-          newGvrm.character.action.play();
+        if (gvRMs[index]) await gvRMs[index].remove(scene);
 
-          gvRMs[index] = newGvrm;
-        } catch (err) {
-          console.warn('Avatar load cancelled or failed:', err);
-        }
+        const newGvrm = await GVRM.load(url, scene, camera, renderer);
+        const model = newGvrm.character.currentVrm.scene;
+        model.position.set(index * 1.8, 0, 0);
+        model.scale.setScalar(0.75);
+        await newGvrm.changeFBX(animations[index]);
+        newGvrm.character.action.play();
+        gvRMs[index] = newGvrm;
+      } catch (err) {
+        console.warn('Avatar load cancelled or failed:', err);
       }
+    }
 
-      if (key === '0') {
-        // Restart all animations in sync
-        for (let i = 0; i < gvRMs.length; i++) {
-          const g = gvRMs[i];
-          if (!g) continue;
-          await g.changeFBX(animations[i]);
-          g.character.action.play();
-        }
+    // 0: Restart all animations
+    if (key === '0') {
+      for (let i = 0; i < gvRMs.length; i++) {
+        const g = gvRMs[i];
+        if (!g) continue;
+        await g.changeFBX(animations[i]);
+        g.character.action.play();
       }
-    });
+    }
 
-    // Render loop
-    renderer.setAnimationLoop(() => {
-      for (const g of gvRMs) {
-        g?.update();
+    // G: Toggle solid background
+    if (key === 'g') {
+      useSolidBackground = !useSolidBackground;
+      if (useSolidBackground) {
+        renderer.setClearColor(solidBgColor, 1);
+      } else {
+        renderer.setClearColor(0x222222, 1);
       }
-      controls.update();
-      renderer.render(scene, camera);
-    });
-  </script>
+    }
+
+    // K: Open color picker
+    if (key === 'k') {
+      bgColorPicker.click();
+    }
+  });
+
+  // Render loop
+  renderer.setAnimationLoop(() => {
+    for (const g of gvRMs) g?.update();
+    controls.update();
+    renderer.render(scene, camera);
+  });
+</script>
 </body>
 </html>
