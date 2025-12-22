@@ -12,17 +12,18 @@
       height: 100vh;
       display: block;
     }
-    #commands {
+    #controls {
       position: absolute;
       top: 10px;
       left: 10px;
       color: white;
       font-family: monospace;
-      font-size: 13px;
-      background-color: rgba(0, 0, 0, 0.6);
-      padding: 10px;
+      font-size: 12px;
+      background-color: rgba(0, 0, 0, 0.8);
+      padding: 12px;
       border-radius: 5px;
       display: none; /* Hidden by default */
+      max-width: 280px;
     }
   </style>
 </head>
@@ -30,21 +31,19 @@
 <body>
   <canvas id="canvas"></canvas>
 
-  <div id="commands">
+  <!-- Combined controls + info panel (hidden by default) -->
+  <div id="controls">
     <b>Controls</b><br>
-    Press 1-4 to load .gvrm files<br>
-    Press 0 to sync animations<br>
-    Keys 1–4: Load local avatars<br>
-    Key 0: Restart all animations<br>
-    Key G: Toggle solid background<br>
-    Key K: Pick background color<br>
-    Mouse Wheel: Zoom in/out
-    <b>Avatar Status</b><br>
+    1-4: Load avatars | QWER: Load animations<br>
+    0: Instant animation reset<br>
+    G: Toggle solid background<br>
+    K: Pick background color<br>
+    I: Toggle this panel<br>
+    <br><b>Status:</b><br>
     Slot 1: Chicken Dance<br>
     Slot 2: Jab Cross<br>
     Slot 3: Happy Idle<br>
-    Slot 4: Flying<br>
-
+    Slot 4: Flying
   </div>
 
   <!-- hidden color picker for background -->
@@ -74,7 +73,9 @@
     import { GVRM } from 'gvrm';
 
     const canvas = document.getElementById('canvas');
-    const infoDiv = document.getElementById('commands');
+    const controlsDiv = document.getElementById('controls');
+    const bgColorPicker = document.getElementById('bgColorPicker');
+    
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -83,16 +84,11 @@
 
     // Background control state
     let useSolidBackground = true;
-    let solidBgColor = new THREE.Color(0x00ff00); // default green
+    let solidBgColor = new THREE.Color(0x00ff00);
     renderer.setClearColor(solidBgColor, 1);
     scene.background = null;
 
-    const camera = new THREE.PerspectiveCamera(
-      65,
-      window.innerWidth / window.innerHeight,
-      0.01,
-      100
-    );
+    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.01, 100);
     camera.position.set(2.4, 2.0, 8);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -102,19 +98,8 @@
 
     // Avatar container
     const gvRMs = [];
-    const avatarPaths = [
-      './avatars/Avatar1.gvrm',
-      './avatars/Avatar2.gvrm',
-      './avatars/Avatar3.gvrm',
-      './avatars/Avatar4.gvrm'
-    ];
-
-    const animations = [
-      './animations/Chicken Dance.fbx',
-      './animations/Jab Cross.fbx',
-      './animations/Happy Idle.fbx',
-      './animations/Flying.fbx'
-    ];
+    const avatarPaths = ['./avatars/Avatar1.gvrm', './avatars/Avatar2.gvrm', './avatars/Avatar3.gvrm', './avatars/Avatar4.gvrm'];
+    const animations = ['./animations/Chicken Dance.fbx', './animations/Jab Cross.fbx', './animations/Happy Idle.fbx', './animations/Flying.fbx'];
 
     // Load default avatars
     for (let i = 0; i < avatarPaths.length; i++) {
@@ -125,15 +110,13 @@
         char.scale.setScalar(0.75);
         await g.changeFBX(animations[i]);
         g.character.action.play();
+        g.character.transitionDuration = 0; // Instant transitions
         gvRMs.push(g);
       } catch (err) {
         console.warn(`Could not load ${avatarPaths[i]}`, err);
         gvRMs.push(null);
       }
     }
-
-    // DOM elements
-    const bgColorPicker = document.getElementById('bgColorPicker');
 
     // Resize handling
     window.addEventListener('resize', () => {
@@ -145,23 +128,19 @@
     // Mouse wheel zoom
     const minDistance = 2.0;
     const maxDistance = 25.0;
-    window.addEventListener(
-      'wheel',
-      (e) => {
-        e.preventDefault();
-        const dir = new THREE.Vector3();
-        dir.subVectors(camera.position, controls.target).normalize();
-        const distance = camera.position.distanceTo(controls.target);
-        let newDist = distance + e.deltaY * 0.002;
-        newDist = Math.max(minDistance, Math.min(maxDistance, newDist));
-        camera.position.copy(controls.target).add(dir.multiplyScalar(newDist));
-        controls.update();
-      },
-      { passive: false }
-    );
+    window.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const dir = new THREE.Vector3();
+      dir.subVectors(camera.position, controls.target).normalize();
+      const distance = camera.position.distanceTo(controls.target);
+      let newDist = distance + e.deltaY * 0.002;
+      newDist = Math.max(minDistance, Math.min(maxDistance, newDist));
+      camera.position.copy(controls.target).add(dir.multiplyScalar(newDist));
+      controls.update();
+    }, { passive: false });
 
-    // Color picker event
-    bgColorPicker.addEventListener('input', (e) => {
+    // Color picker event - FIXED: use change event and focus
+    bgColorPicker.addEventListener('change', (e) => {
       const hex = e.target.value;
       solidBgColor.set(hex);
       if (useSolidBackground) {
@@ -169,11 +148,23 @@
       }
     });
 
+    // Force color picker to open reliably
+    const openColorPicker = () => {
+      bgColorPicker.focus();
+      bgColorPicker.click();
+      setTimeout(() => bgColorPicker.showPicker?.(), 10);
+    };
+
     // Keyboard controls
     window.addEventListener('keydown', async (e) => {
       const key = e.key.toLowerCase();
 
-      // 1–4: Load local avatar
+      // I: Toggle controls panel
+      if (key === 'i') {
+        controlsDiv.style.display = controlsDiv.style.display === 'none' ? 'block' : 'none';
+      }
+
+      // 1-4: Load avatars
       if (key >= '1' && key <= '4') {
         const index = parseInt(key) - 1;
         try {
@@ -191,6 +182,7 @@
           const model = newGvrm.character.currentVrm.scene;
           model.position.set(index * 1.8, 0, 0);
           model.scale.setScalar(0.75);
+          newGvrm.character.transitionDuration = 0;
           await newGvrm.changeFBX(animations[index]);
           newGvrm.character.action.play();
           gvRMs[index] = newGvrm;
@@ -199,12 +191,37 @@
         }
       }
 
-      // 0: Restart all animations
+      // QWER: Load animations for slots 1-4
+      const animKeys = { 'q': 0, 'w': 1, 'e': 2, 'r': 3 };
+      if (animKeys[key] !== undefined) {
+        const index = animKeys[key];
+        try {
+          const fileHandles = await window.showOpenFilePicker({
+            multiple: false,
+            types: [{ description: 'FBX Animation', accept: { 'model/gltf-binary': ['.fbx'] } }]
+          });
+          const file = await fileHandles[0].getFile();
+          const blob = new Blob([await file.arrayBuffer()]);
+          const url = URL.createObjectURL(blob);
+
+          if (gvRMs[index]) {
+            gvRMs[index].character.transitionDuration = 0;
+            await gvRMs[index].changeFBX(url);
+            gvRMs[index].character.action.play();
+          }
+        } catch (err) {
+          console.warn('Animation load cancelled or failed:', err);
+        }
+      }
+
+      // 0: INSTANT animation reset (no await, no transition)
       if (key === '0') {
         for (let i = 0; i < gvRMs.length; i++) {
           const g = gvRMs[i];
           if (!g) continue;
-          await g.changeFBX(animations[i]);
+          g.character.transitionDuration = 0;
+          g.changeFBX(animations[i]); // No await = instant
+          g.character.action.time = 0; // Reset to start
           g.character.action.play();
         }
       }
@@ -219,14 +236,9 @@
         }
       }
 
-      // K: Open color picker
+      // K: Open color picker - FIXED
       if (key === 'k') {
-        bgColorPicker.click();
-      }
-    
-      // I: Toggle info panel
-      if (key === 'i') {
-        infoDiv.style.display = infoDiv.style.display === 'none' ? 'block' : 'none';
+        openColorPicker();
       }
     });
 
