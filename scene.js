@@ -1,43 +1,49 @@
-// Minimal world: city.glb + procedural sky + optional fog
-
 import * as THREE from 'three';
-import { Sky } from 'three/addons/objects/Sky.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { Sky } from 'three/addons/objects/Sky.js';
 
-// Load your city/world GLB
-export async function loadCity(scene) {
-    // Load city from GLTF with Draco compression
-    const loader = new GLTFLoader();
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/libs/draco/');
-    loader.setDRACOLoader(dracoLoader);
-    loader.setMeshoptDecoder(MeshoptDecoder);
+// Export a reference so main.js can access the loaded city
+export let city = null;
+
+export async function buildScene(scene) {
+  // Lighting
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+  hemiLight.position.set(0, 20, 0);
+  scene.add(hemiLight);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  dirLight.position.set(5, 10, 7.5);
+  scene.add(dirLight);
+
+  // Sky
+  const sky = new Sky();
+  sky.scale.setScalar(450000);
+  scene.add(sky);
+  sky.material.uniforms['turbidity'].value = 2.8;
+  sky.material.uniforms['rayleigh'].value = 2;
+  sky.material.uniforms['mieCoefficient'].value = 0.002;
+  sky.material.uniforms['mieDirectionalG'].value = 0.988;
+
+    const sun = new THREE.Vector3();
+    const phi = THREE.MathUtils.degToRad( 90 - 45 );
+    const theta = THREE.MathUtils.degToRad( 105 );
   
-  
-    const gltf = await loader.loadAsync('./2Cam/City/City.gltf');
-    city = gltf.scene;
-    city.scale.setScalar(1);
-    city.position.set(0, -1.1707599999964238, 0);
-    scene.add(city);
-    return city;
-  }
-  
+  sun.setFromSphericalCoords( 1, phi, theta );
+  sky.material.uniforms[ 'sunPosition' ].value.copy( sun );
 
-// Optional: enable fog on the scene for atmospheric depth
-export function enableFog(scene, color = 0x222233, near = 10, far = 400) {
-  scene.fog = new THREE.Fog(color, near, far);
-}
+  // Load city from GLTF with Draco compression
+  const loader = new GLTFLoader();
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.181.2/examples/jsm/libs/draco/');
+  loader.setDRACOLoader(dracoLoader);
+  loader.setMeshoptDecoder(MeshoptDecoder);
 
-// skybox texture for background and environment
-export function createSky(scene) {
-  const loader = new THREE.TextureLoader(); // or RGBELoader for HDR
-  loader.load('./assets/skybox.jpeg', (texture) => {
-  texture.mapping = THREE.EquirectangularReflectionMapping;
-  texture.colorSpace = THREE.SRGBColorSpace; // for r150+, was sRGBEncoding before
 
-  scene.background = texture;      // show as background
-  scene.environment = texture;     // optional: reflections for PBR materials
-});
+  const gltf = await loader.loadAsync('./City/City.gltf');
+  city = gltf.scene;
+  city.scale.setScalar(1);
+  city.position.set( 35.726, -11.25, -17.117);
+  scene.add(city);
 }
