@@ -55,7 +55,8 @@ await buildScene(scene);
 // GVRM avatar
 let gvrm = await GVRM.load('./avatars/sample.gvrm', scene, camera, renderer);
 let character = gvrm.character.currentVrm.scene;
-character.position.set(0, 0.05, 0);
+character.position.set(0, 0, 0);
+character.scale.setScalar(0.5);
 
 
 await gvrm.changeFBX('./animations/Walking.fbx');
