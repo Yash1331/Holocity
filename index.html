@@ -22,6 +22,7 @@
       background-color: rgba(0, 0, 0, 0.6);
       padding: 10px;
       border-radius: 5px;
+      display: none; /* Hidden by default */
     }
   </style>
 </head>
@@ -31,11 +32,19 @@
 
   <div id="commands">
     <b>Controls</b><br>
+    Press 1-4 to load .gvrm files<br>
+    Press 0 to sync animations<br>
     Keys 1–4: Load local avatars<br>
     Key 0: Restart all animations<br>
     Key G: Toggle solid background<br>
     Key K: Pick background color<br>
     Mouse Wheel: Zoom in/out
+    <b>Avatar Status</b><br>
+    Slot 1: Chicken Dance<br>
+    Slot 2: Jab Cross<br>
+    Slot 3: Happy Idle<br>
+    Slot 4: Flying<br>
+
   </div>
 
   <!-- hidden color picker for background -->
@@ -65,6 +74,7 @@
     import { GVRM } from 'gvrm';
 
     const canvas = document.getElementById('canvas');
+    const infoDiv = document.getElementById('commands');
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -212,6 +222,11 @@
       // K: Open color picker
       if (key === 'k') {
         bgColorPicker.click();
+      }
+    
+      // I: Toggle info panel
+      if (key === 'i') {
+        infoDiv.style.display = infoDiv.style.display === 'none' ? 'block' : 'none';
       }
     });
 
