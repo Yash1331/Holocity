@@ -110,6 +110,58 @@ for (let i = 0; i < avatarPaths.length; i++) {
   gvRMs.push(gvrmInstance);
 }
 
+// After the part where you define and load the initial 4 avatars
+// (reuse your existing gvRMs[] array setup)
+
+const animations = [
+  './animations/ChickenDance.fbx',
+  './animations/JabCross.fbx',
+  './animations/HappyIdle.fbx',
+  './animations/Flying.fbx'
+];
+
+// Restart all animations when pressing "0"
+window.addEventListener('keydown', async (e) => {
+  if (e.key === '0') {
+    for (let i = 0; i < gvRMs.length; i++) {
+      const g = gvRMs[i];
+      await g.changeFBX(animations[i]);
+      g.character.action.play();
+    }
+  }
+});
+
+// Replace avatars when pressing 1-4 keys
+window.addEventListener('keydown', async (e) => {
+  const keyNum = parseInt(e.key);
+  if (keyNum >= 1 && keyNum <= 4) {
+    // Load a local file for this avatar
+    const fileHandle = await window.showOpenFilePicker({
+      types: [{ description: 'GVRM Avatar', accept: { 'application/octet-stream': ['.gvrm'] } }]
+    });
+
+    const file = await fileHandle[0].getFile();
+    const blob = new Blob([await file.arrayBuffer()]);
+    const url = URL.createObjectURL(blob);
+
+    // Remove the old avatar
+    await gvRMs[keyNum - 1].remove(scene);
+
+    // Load the new avatar in the same slot
+    const newGvrm = await GVRM.load(url, scene, camera, renderer);
+    const newChar = newGvrm.character.currentVrm.scene;
+    newChar.scale.setScalar(0.75);
+    newChar.position.set((keyNum - 1) * 1.5, 0, 0);
+
+    // Assign dedicated animation
+    await newGvrm.changeFBX(animations[keyNum - 1]);
+    newGvrm.character.action.play();
+
+    // Replace the reference
+    gvRMs[keyNum - 1] = newGvrm;
+  }
+});
+
 
     // Set animation transition duration
     gvrm.character.transitionDuration = 0.2;
