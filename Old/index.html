@@ -90,6 +90,8 @@
     let gvrm = await GVRM.load('./avatars/sample.gvrm', scene, camera, renderer);
     let character = gvrm.character.currentVrm.scene;
     character.position.set(0, 0, 0);
+    character.sca;le.setScalar(0.1);
+    
 
     // Load Walking animation
     await gvrm.changeFBX('./animations/Walking.fbx');
