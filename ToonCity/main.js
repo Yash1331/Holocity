@@ -116,6 +116,21 @@ renderer.setAnimationLoop(() => {
   const currentRotationSpeed =
     (isBoosting ? rotationSpeed * speedBoost : rotationSpeed) * deltaScale;
 
+// Switch animation based on speed (only if not in dance/jabcross mode)
+      if (currentAnimation !== 'dance' && currentAnimation !== 'jabcross') {
+        if (isBoosting && currentAnimation === 'walking') {
+          currentAnimation = 'running';
+          gvrm.changeFBX('./animations/Running.fbx');
+          gvrm.character.action.setEffectiveTimeScale(1.0);
+          gvrm.character.action.play();
+        } else if (!isBoosting && currentAnimation === 'running') {
+          currentAnimation = 'walking';
+          gvrm.changeFBX('./animations/Walking.fbx');
+          gvrm.character.action.setEffectiveTimeScale(1.0);
+          gvrm.character.action.play();
+        }
+      }
+    
 
   // Avatar movement
   if (keys['a']) character.rotation.y += currentRotationSpeed;
